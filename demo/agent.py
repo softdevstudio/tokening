@@ -78,19 +78,21 @@ def run(spec):
         decision = call(main, tool, arguments)
         if decision["code"] != expected:
             raise RuntimeError("Unexpected decision for " + label + ": " + decision["code"])
-        steps.append({"step": label, **decision})
+        steps.append({"step": label, "tool": tool, "arguments": arguments, **decision})
     barrier = threading.Barrier(2)
+
+    parallel_arguments = {"id": 2, "title": "Parallel edit"}
 
     def compete(request_id):
         barrier.wait(timeout=5)
-        return call(parallel, "wp_update_post", {"id": 2, "title": "Parallel edit"}, request_id)
+        return call(parallel, "wp_update_post", parallel_arguments, request_id)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         futures = [pool.submit(compete, value) for value in (10, 11)]
         decisions = [future.result() for future in futures]
     if sorted(decision["code"] for decision in decisions) != ["allowed", "grant_exhausted"]:
         raise RuntimeError("A one-use parallel grant did not have exactly one winner")
-    steps.append({"step": "parallel calls", "decisions": decisions})
+    steps.append({"step": "parallel calls", "tool": "wp_update_post", "arguments": parallel_arguments, "decisions": decisions})
     return {"isolation": "passed", "steps": steps, "parallel_winners": 1}
 
 

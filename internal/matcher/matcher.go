@@ -95,7 +95,7 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 		return refuse(GrantExpired, fmt.Sprintf("Grant %s expired at %s.", g.ID, g.ExpiresAt.UTC().Format(time.RFC3339Nano)))
 	}
 	if c.Target != g.Template.Target {
-		return refuse(ToolNotAllowed, "This grant does not allow that target.")
+		return refuse(ToolNotAllowed, fmt.Sprintf("Grant is for target %s; call went to %s.", g.Template.Target, quoteShort(c.Target)))
 	}
 	args := make(map[string]json.RawMessage, len(c.Args))
 	for k, v := range c.Args {
@@ -103,18 +103,18 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 	}
 	if g.TargetKind == "http" {
 		if c.Tool != "" || c.Method != g.Template.Method || !safePath(c.Path) {
-			return refuse(ToolNotAllowed, "This grant does not allow that HTTP method or path.")
+			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call used %s on another path.", g.Template.Method, g.Template.Path, quoteShort(c.Method)))
 		}
 		pathArgs, ok := extractPath(g.Template.Path, c.Path)
 		if !ok {
-			return refuse(ToolNotAllowed, "This grant does not allow that HTTP path.")
+			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call used another path.", g.Template.Method, g.Template.Path))
 		}
 		for _, name := range keys(pathArgs) {
 			text := pathArgs[name]
 			rule := g.Template.Args[name]
 			raw, err := pathScalar(text, rule, g.Args[name])
 			if err != nil {
-				return refuse(ArgMismatch, "Path argument "+name+" does not match its binding.")
+				return refuse(ArgMismatch, mismatchReason("path argument", name, g.Args[name].Value, json.RawMessage(text)))
 			}
 			if prior, exists := args[name]; exists && !equal(prior, raw) {
 				return refuse(ArgMismatch, "Path and body disagree about argument "+name+".")
@@ -122,7 +122,10 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 			args[name] = raw
 		}
 	} else if c.Tool != g.Template.Tool || c.Method != "" || c.Path != "" || len(c.Query) != 0 {
-		return refuse(ToolNotAllowed, "This grant does not allow that tool or transport.")
+		if c.Tool != g.Template.Tool && c.Method == "" && c.Path == "" && len(c.Query) == 0 {
+			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s; call asked for %s.", g.Template.Tool, quoteShort(c.Tool)))
+		}
+		return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows MCP tool %s only; call used another transport.", g.Template.Tool))
 	}
 	for _, group := range []struct {
 		name     string
@@ -140,7 +143,7 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 	// Check scope before exhaustion so the demo can explain attempts to edit a
 	// different post or delete a post even after the valid edit spent the use.
 	if g.UsesLeft == 0 {
-		return refuse(GrantExhausted, fmt.Sprintf("Grant %s allowed %d use(s) and has none left.", g.ID, g.InitialUses))
+		return refuse(GrantExhausted, fmt.Sprintf("Grant %s allowed %s and has none left.", g.ID, plural(g.InitialUses, "use")))
 	}
 	return Decision{Allowed: true, Code: Allowed, Reason: "Call fits this grant. A use must be consumed before forwarding.", Grant: g.ID}, nil
 }
@@ -197,35 +200,35 @@ func checkGroup(label string, rules map[string]policy.Constraint, bindings map[s
 		binding := bindings[name]
 		raw, ok := values[name]
 		if !ok {
-			return ArgMismatch, fmt.Sprintf("Bound %s %s is missing.", label, name)
+			return ArgMismatch, fmt.Sprintf("Grant is bound to %s %s; call did not send it.", label, name)
 		}
 		if binding.SHA256 != "" {
 			value, err := scalar(raw)
 			if err != nil || value.kind != "string" {
-				return ArgLimit, fmt.Sprintf("%s %s must be a string.", label, name)
+				return ArgLimit, fmt.Sprintf("%s %s must be a string.", capital(label), name)
 			}
 			digest := sha256.Sum256([]byte(value.text))
 			want, _ := hex.DecodeString(binding.SHA256)
 			if subtle.ConstantTimeCompare(digest[:], want) != 1 {
-				return ArgMismatch, fmt.Sprintf("%s %s does not match its bound hash.", label, name)
+				return ArgMismatch, fmt.Sprintf("%s %s does not match the exact text approved for this grant.", capital(label), name)
 			}
 		} else if !equal(raw, binding.Value) {
-			return ArgMismatch, fmt.Sprintf("%s %s does not match its bound value.", label, name)
+			return ArgMismatch, mismatchReason(label, name, binding.Value, raw)
 		}
 	}
 	for _, name := range keys(values) {
 		rule, ok := rules[name]
 		if !ok {
 			if !allowAdditional {
-				return ArgNotAllowed, fmt.Sprintf("This grant does not allow %s %s.", label, name)
+				return ArgNotAllowed, fmt.Sprintf("Grant does not allow %s %s. Allowed: %s.", label, quoteShort(name), strings.Join(keys(rules), ", "))
 			}
 			if !json.Valid(values[name]) || !utf8.Valid(values[name]) {
-				return ArgLimit, fmt.Sprintf("%s %s must be valid JSON.", label, name)
+				return ArgLimit, fmt.Sprintf("%s %s must be valid JSON.", capital(label), quoteShort(name))
 			}
 			continue
 		}
 		if err := checkValue(rule, values[name]); err != nil {
-			return ArgLimit, fmt.Sprintf("%s %s: %s", label, name, err)
+			return ArgLimit, fmt.Sprintf("%s %s %s.", capital(label), name, err)
 		}
 	}
 	return "", ""
@@ -268,10 +271,10 @@ func checkValue(c policy.Constraint, raw json.RawMessage) error {
 	}
 	if v.kind == "string" {
 		if c.MaxLen != nil && utf8.RuneCountInString(v.text) > *c.MaxLen {
-			return fmt.Errorf("exceeds the character limit")
+			return fmt.Errorf("is %d characters; grant allows up to %d", utf8.RuneCountInString(v.text), *c.MaxLen)
 		}
 		if c.MaxBytes != nil && len(v.text) > *c.MaxBytes {
-			return fmt.Errorf("exceeds the UTF-8 byte limit")
+			return fmt.Errorf("is %s; grant allows up to %s", plural(len(v.text), "byte"), plural(*c.MaxBytes, "byte"))
 		}
 		if c.Pattern != "" {
 			pattern, err := regexp.Compile(`\A(?:` + c.Pattern + `)\z`)
@@ -374,6 +377,50 @@ func UpstreamFailure(grant string, status int) Decision {
 	}
 	return Decision{Allowed: true, Code: UpstreamError, Reason: reason, Grant: grant}
 }
+
+// quoteShort renders caller-supplied text for a reason, trimmed so a hostile
+// call cannot flood the audit log through the reason field.
+func quoteShort(s string) string {
+	const max = 64
+	if utf8.RuneCountInString(s) > max {
+		r := []rune(s)
+		s = string(r[:max]) + "…"
+	}
+	if s == "" {
+		return `""`
+	}
+	if strings.ContainsAny(s, " \t\n\"") {
+		return fmt.Sprintf("%q", s)
+	}
+	return s
+}
+
+// mismatchReason names both values only when both are JSON numbers or
+// booleans, such as a post ID. Strings are never repeated: a bound or sent
+// string can hold private text, and reasons are stored in the audit log.
+func mismatchReason(label, name string, bound, sent json.RawMessage) string {
+	b, errB := scalar(bound)
+	v, errV := scalar(sent)
+	if errB == nil && errV == nil && b.kind != "string" && v.kind != "string" && len(b.text) <= 32 && len(v.text) <= 32 {
+		return fmt.Sprintf("Grant is bound to %s %s; call sent %s %s.", name, b.text, name, v.text)
+	}
+	return fmt.Sprintf("%s %s does not match the value bound to this grant.", capital(label), name)
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", word)
+	}
+	return fmt.Sprintf("%d %ss", n, word)
+}
+
+func capital(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 func keys[V any](m map[string]V) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {

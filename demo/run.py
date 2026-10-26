@@ -46,9 +46,11 @@ def main():
                 time.sleep(.5)
         admin("target", "add", "demo-wp", "--cred-file", "/secrets/wordpress.json")
         issued = [json.loads(admin("grant", "issue", "wp.edit-post-text", "--bind", "id=2", "--uses", "1", "--ttl", "15m", "--to", "demo-agent", "--by", "demo-operator", "--reason", reason)) for reason in ("edit one post once", "parallel single-use check")]
+        before = json.loads(execute(["exec", "-T", "wordpress", "php", "/opt/tokening/snapshot.php"], timeout=30))
         specification = json.dumps({"main": issued[0]["secret"], "parallel": issued[1]["secret"]})
         agent = json.loads(execute(["--profile", "agent", "run", "--rm", "-T", "--no-deps", "agent"], specification, timeout=240))
         wordpress = json.loads(execute(["exec", "-T", "wordpress", "php", "/opt/tokening/verify.php"], timeout=30))
+        wordpress["before"] = before
         audit_text = admin("log", "--export")
         audit = [json.loads(line) for line in audit_text.splitlines()]
         authorizations = [row for row in audit if row["authorization_id"] is None and row["code"] == "allowed"]

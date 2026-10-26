@@ -131,7 +131,11 @@ func (g *Gateway) describe(w http.ResponseWriter, r *http.Request, secret string
 	if extra == "" {
 		extra = "refuse"
 	}
-	description := fmt.Sprintf("Grant %s is %s. It allows %s on target %s, with %d use(s) left until %s. Undeclared fields: %s.", grant.ID, state, action, grant.Template.Target, grant.UsesLeft, grant.ExpiresAt.Format(time.RFC3339Nano), extra)
+	uses := fmt.Sprintf("%d uses", grant.UsesLeft)
+	if grant.UsesLeft == 1 {
+		uses = "1 use"
+	}
+	description := fmt.Sprintf("Grant %s is %s. It allows %s on target %s, with %s left until %s. Undeclared fields: %s.", grant.ID, state, action, grant.Template.Target, uses, grant.ExpiresAt.Format(time.RFC3339Nano), extra)
 	writeJSON(w, 200, map[string]any{"grant": grant.ID, "state": state, "target": grant.Template.Target, "tool": grant.Template.Tool, "method": grant.Template.Method, "path": grant.Template.Path, "bound_args": grant.Args, "bound_query": grant.Query, "arguments": grant.Template.Args, "query": grant.Template.Query, "additional_args": extra, "uses_left": grant.UsesLeft, "expires_at": grant.ExpiresAt, "description": description})
 }
 func (g *Gateway) rest(w http.ResponseWriter, r *http.Request, secret string) {

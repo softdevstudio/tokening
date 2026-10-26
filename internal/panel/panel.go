@@ -27,7 +27,9 @@ type Grant struct {
 	State       string    `json:"state"`
 	InitialUses int       `json:"initial_uses"`
 	UsesLeft    int       `json:"uses_left"`
+	CreatedAt   time.Time `json:"created_at"`
 	ExpiresAt   time.Time `json:"expires_at"`
+	Reason      string    `json:"reason"`
 	BoundArgs   struct {
 		ID struct {
 			Value json.RawMessage `json:"value"`
@@ -60,6 +62,7 @@ type Replay struct {
 	Audit     []Decision `json:"audit"`
 	WordPress struct {
 		Posts   []Post `json:"posts"`
+		Before  []Post `json:"before"`
 		Writes  int    `json:"writes"`
 		Deletes int    `json:"deletes"`
 		Version string `json:"wordpress_version"`
@@ -68,7 +71,56 @@ type Replay struct {
 	Agent struct {
 		Isolation       string `json:"isolation"`
 		ParallelWinners int    `json:"parallel_winners"`
+		Steps           []Step `json:"steps"`
 	} `json:"agent"`
+}
+
+// Step is one scripted agent request. Arguments are reduced to short scalars
+// in Decode, so the page shows what was asked without copying agent output.
+type Step struct {
+	Step      string         `json:"step"`
+	Tool      string         `json:"tool,omitempty"`
+	Arguments map[string]any `json:"arguments,omitempty"`
+	Code      string         `json:"code,omitempty"`
+	Decisions []struct {
+		Code string `json:"code"`
+	} `json:"decisions,omitempty"`
+	Tools []string `json:"tools,omitempty"`
+}
+
+const (
+	maxSteps       = 20
+	maxStepArgs    = 8
+	maxShortText   = 60
+	maxGrantReason = 120
+)
+
+func clip(s string, n int) string {
+	r := []rune(s)
+	if len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
+}
+
+// shortScalars keeps numbers, booleans and short strings. Anything else is
+// dropped rather than rendered.
+func shortScalars(in map[string]any) map[string]any {
+	out := map[string]any{}
+	for key, value := range in {
+		if len(out) == maxStepArgs || len(key) > 32 {
+			continue
+		}
+		switch v := value.(type) {
+		case json.Number, bool:
+			out[key] = v
+		case string:
+			if len([]rune(v)) <= maxShortText {
+				out[key] = v
+			}
+		}
+	}
+	return out
 }
 
 func Asset(name string) []byte { data, _ := assets.ReadFile("assets/" + name); return data }
@@ -84,8 +136,30 @@ func Decode(input io.Reader) (Replay, error) {
 	if _, err = jsonobject.Decode(data); err != nil {
 		return replay, errors.New("replay must be one JSON object without duplicate keys")
 	}
-	if json.Unmarshal(data, &replay) != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if decoder.Decode(&replay) != nil {
 		return Replay{}, errors.New("invalid replay fields")
+	}
+	if len(replay.Agent.Steps) > maxSteps || len(replay.WordPress.Before) > 100 {
+		return Replay{}, errors.New("replay has too many steps or posts")
+	}
+	for i := range replay.Agent.Steps {
+		step := &replay.Agent.Steps[i]
+		step.Step, step.Tool = clip(step.Step, 40), clip(step.Tool, 64)
+		step.Arguments = shortScalars(step.Arguments)
+		if len(step.Decisions) > 4 {
+			step.Decisions = step.Decisions[:4]
+		}
+		if len(step.Tools) > 8 {
+			step.Tools = step.Tools[:8]
+		}
+		for j := range step.Tools {
+			step.Tools[j] = clip(step.Tools[j], 64)
+		}
+	}
+	for i := range replay.Grants {
+		replay.Grants[i].Reason = clip(replay.Grants[i].Reason, maxGrantReason)
 	}
 	if replay.Schema != 1 || !replay.Passed || len(replay.Grants) == 0 || len(replay.Grants) > 20 || len(replay.Audit) == 0 || len(replay.Audit) > 5000 || len(replay.WordPress.Posts) == 0 || len(replay.WordPress.Posts) > 100 {
 		return Replay{}, errors.New("expected a passed schema-1 demo replay")

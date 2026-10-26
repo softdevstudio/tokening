@@ -170,6 +170,10 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 			return
 		}
 		if !receipt.Allowed {
+			if receipt.Code == matcher.GrantUnknown {
+				writeJSON(w, http.StatusUnauthorized, receipt.Decision)
+				return
+			}
 			text, _ := json.Marshal(receipt.Decision)
 			rpc(w, id, toolError(string(text)), 0, "")
 			return
@@ -319,25 +323,26 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		}
 		return fields["result"], res.StatusCode, nil
 	}
-	init, _, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 1)
+	init, status, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 1)
 	if err != nil {
-		return nil, 0, err
+		return nil, status, err
 	}
 	var initialized struct {
 		ProtocolVersion string `json:"protocolVersion"`
 	}
 	if json.Unmarshal(init, &initialized) != nil || (initialized.ProtocolVersion != mcpVersion && initialized.ProtocolVersion != "2025-11-25") {
-		return nil, 0, errors.New("unsupported upstream protocol")
+		return nil, status, errors.New("unsupported upstream protocol")
 	}
 	upstreamVersion = initialized.ProtocolVersion
-	if _, _, err = send("notifications/initialized", map[string]any{}, 0); err != nil {
-		return nil, 0, err
+	if _, status, err = send("notifications/initialized", map[string]any{}, 0); err != nil {
+		return nil, status, err
 	}
 	return send("tools/call", map[string]any{"name": name, "arguments": args}, 2)
 }
 func sseResponse(data []byte, id int) ([]byte, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	scanner.Buffer(make([]byte, 4096), MaxBodyBytes)
+	scanner := bufio.NewScanner(bytes.NewReader(bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})))
+	scanner.Split(splitSSELines)
+	scanner.Buffer(make([]byte, 4096), MaxBodyBytes+1)
 	var event []string
 	var found []byte
 	flush := func() {
@@ -369,4 +374,27 @@ func sseResponse(data []byte, id int) ([]byte, error) {
 		return nil, errors.New("missing SSE response")
 	}
 	return found, nil
+}
+
+// SSE permits CR, LF and CRLF line endings, independent of the platform.
+func splitSSELines(data []byte, atEOF bool) (int, []byte, error) {
+	for i, b := range data {
+		if b == '\n' {
+			return i + 1, data[:i], nil
+		}
+		if b == '\r' {
+			if i+1 == len(data) && !atEOF {
+				return 0, nil, nil
+			}
+			n := 1
+			if i+1 < len(data) && data[i+1] == '\n' {
+				n = 2
+			}
+			return i + n, data[:i], nil
+		}
+	}
+	if atEOF && len(data) > 0 {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
 }

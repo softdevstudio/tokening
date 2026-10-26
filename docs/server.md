@@ -58,7 +58,7 @@ POST /admin/targets accepts name and credential. GET /admin/templates returns th
 
 GET /admin/decisions accepts since (exclusive nonnegative ID), grant (optional ID filter) and follow=true (optional SSE). GET /admin/decisions.jsonl accepts since and grant and reports a successful complete snapshot with the Tokening-Export-Complete: true HTTP trailer. Check this marker when calling the API directly. A stream that closes early is incomplete even if its initial status was 200.
 
-Explain remains a later-phase command. The Docker WordPress demo and read-only panel are implemented. Stdio upstreams belong to the later MCP integration phase. This development build has not been released.
+Explain remains a later-phase command. The Docker WordPress demo and read-only panel are implemented. Stdio upstreams belong to the later MCP integration phase. Release archives and recorded results are described in docs/releases.md.
 
 # Read-only panel and replay
 

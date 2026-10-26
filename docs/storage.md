@@ -2,7 +2,7 @@
 
 Tokening's internal store opens one on-disk SQLite database. It uses the pure-Go
 `modernc.org/sqlite` driver, so no C compiler or external database server is needed.
-The server and grant commands will use this package when they are implemented.
+The running server and grant commands use this package.
 There is no database CLI command yet.
 
 Keep the database in a private directory controlled by the operator. The store
@@ -28,7 +28,7 @@ the version. A database made by a newer schema is refused rather than downgraded
 The initial schema has targets, versioned templates, grants and decisions.
 A grant references the exact `(template_id, template_version)` that issued it.
 Template versions cannot be updated or deleted. A policy change will create a new
-version. [Policy application and grant issuance](grants.md) are now implemented internally; the server still needs to wire policy reload to its signal handler.
+version. [Policy application and grant issuance](grants.md) are implemented; the running server reloads policy on SIGHUP on Unix.
 
 Grant secrets have a unique, 32-byte hash column, with no plaintext secret column.
 Counters cannot be negative or exceed the initial allowance. Times are UTC Unix

@@ -85,7 +85,7 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 	refuse := func(code Code, reason string) (Decision, error) {
 		return Decision{Code: code, Reason: reason, Grant: g.ID}, nil
 	}
-	if err := validateGrant(g); err != nil {
+	if err := ValidateGrant(g); err != nil {
 		return Decision{}, fmt.Errorf("invalid grant snapshot: %w", err)
 	}
 	if g.RevokedAt != nil {
@@ -145,7 +145,11 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 	return Decision{Allowed: true, Code: Allowed, Reason: "Call fits this grant. A use must be consumed before forwarding.", Grant: g.ID}, nil
 }
 
-func validateGrant(g *Grant) error {
+// ValidateGrant checks the saved permission shape and counters, without evaluating a call.
+func ValidateGrant(g *Grant) error {
+	if g == nil {
+		return fmt.Errorf("missing grant snapshot")
+	}
 	if g.ID == "" || g.InitialUses <= 0 || g.InitialUses > g.Template.MaxUses || g.UsesLeft < 0 || g.UsesLeft > g.InitialUses || g.ExpiresAt.IsZero() {
 		return fmt.Errorf("invalid identity, counter or expiry")
 	}

@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Grant issuing, inspection and revocation are next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Audit export is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -28,7 +28,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Matcher: pure function, every constraint and refusal code, table-driven tests
 - [x] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
 - [x] Vault: encrypt/decrypt credentials, key from env or file
-- [ ] Grant issue / inspect / revoke, secret shown once, stored hashed
+- [x] Grant issue / inspect / revoke, secret shown once, stored hashed
 - [ ] Audit log: one row per decision, JSONL export
 
 ### Gateway
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added internal policy application and grant issue/inspect/revoke methods. Issuance narrows active template limits, validates scalar bindings, hashes hash-bound strings before storage and returns a random bearer secret only after commit; SQLite retains only its hash. Inspection exposes no bearer hash or secret and bounds decision history to 100 rows. Revocation is idempotent and serializes with consumption. Schema 2 tracks active templates separately from immutable history, so removal stops issuance and reload cannot redirect old grants by changing a target ID. Refactored the tested commit-error connection cleanup into a shared transaction helper. Updated migration fixtures for the new schema and added a schema-1 upgrade test, reload/issuance rollback, hidden-secret checks, saved-version/removal tests, REST coverage and concurrent revoke/consume tests. Local CGO-free format/vet/tests/build and store/matcher race detector tests passed. Updated references. Next: audit export, then gateway/admin listeners and CLI wiring. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added NaCl secretbox encryption with random nonces, a versioned envelope and authenticated target binding. Added canonical base64 key loading from either TOKENING_VAULT_KEY or a private regular file, random key generation and diagnostic redaction. Store credential writes now encrypt before SQLite and reads authenticate before returning plaintext for the future forwarder. Tests cover tampering at every byte, all truncations, wrong keys/targets, limits, key sources and file permissions, concurrent encryption, persistence/reopen, replacement and plaintext absence in the DB/WAL/SHM files. Pinned golang.org/x/crypto with its BSD notice and documented key custody and integration limits. Local CGO-free format/vet/tests/build, module verification and vault/store race detector tests passed. Next: grant issuing, inspection and revocation. Server wiring and forwarding still remain. No release published.
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
-	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,28 +29,16 @@ type templateConstraints struct {
 // decision AND a nil error permit forwarding. A commit error must fail closed:
 // the caller cannot assume that the transaction did not reach durable storage.
 func (s *Store) Consume(ctx context.Context, secret string, call matcher.Call) (matcher.Decision, error) {
-	conn, err := s.db.Conn(ctx)
-	if err != nil {
-		return matcher.Decision{}, fmt.Errorf("acquire consumption connection: %w", err)
-	}
-	defer conn.Close()
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		return matcher.Decision{}, fmt.Errorf("begin consumption: %w", err)
-	}
-	defer tx.Rollback()
-	decision, err := consumeInTx(ctx, tx, sha256.Sum256([]byte(secret)), call, time.Now)
+	var decision matcher.Decision
+	err := s.writeTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		decision, err = consumeInTx(ctx, tx, sha256.Sum256([]byte(secret)), call, time.Now)
+		return err
+	})
 	if err != nil {
 		return matcher.Decision{}, err
 	}
-	if err = tx.Commit(); err != nil {
-		// SQLite can leave a transaction open after COMMIT fails (for example a
-		// deferred foreign-key violation). database/sql considers the Tx done and
-		// will not let its deferred Rollback run. Discard this reserved connection
-		// so no later call sees an uncommitted decrement or inherits the open Tx.
-		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
-		return matcher.Decision{}, fmt.Errorf("commit consumption: %w", err)
-	}
+
 	return decision, nil
 }
 

@@ -22,8 +22,7 @@ path in the action column.
 The template's `constraints_json` column contains `args`, `query` and
 `additional_args`. Target, tool, method, path and maximum allowance are held in
 other template columns. A grant's binding columns contain matcher binding
-objects, for example `{"id":{"value":2}}`. Issuance and admin APIs will write
-these snapshots when they are implemented. The consumer does not issue grants.
+objects, for example `{"id":{"value":2}}`. The [grant issuer](grants.md) now writes these snapshots. The consumer does not issue grants.
 
 A match refusal does not spend a use. An audit-insert failure rolls back the
 decrement. Any commit error fails closed. SQLite can leave a transaction open

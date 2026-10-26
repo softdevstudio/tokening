@@ -17,7 +17,10 @@ import (
 //go:embed migrations/001_initial.sql
 var initialSchema string
 
-var migrations = []string{initialSchema}
+//go:embed migrations/002_active_templates.sql
+var activeTemplatesSchema string
+
+var migrations = []string{initialSchema, activeTemplatesSchema}
 
 type Store struct{ db *sql.DB }
 

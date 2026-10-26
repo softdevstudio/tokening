@@ -45,3 +45,5 @@ count as a size limit. Warnings are printed in stable order.
 
 This command checks policy structure and constraints. It does not prove that an
 upstream tool exists or that a credential works, and does not yet enforce calls.
+
+The internal store can now [apply a policy and issue grants](grants.md). Removed templates stop issuing new grants while existing grants retain their saved versions. Target destinations cannot change under an existing target ID.

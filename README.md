@@ -12,8 +12,8 @@ Licence: Apache 2.0.
 
 Policy files are checked locally without contacting targets or opening the credential vault. See [the policy reference](docs/policy.md) for supported fields and warnings.
 
-The internal SQLite store now supports WAL mode and atomic schema migrations. Grant handling and the gateway are still in development. See [storage](docs/storage.md) for persistence and backup details.
+The internal SQLite store now supports WAL mode and atomic schema migrations. The gateway is still in development. See [storage](docs/storage.md) for persistence and backup details.
 
 The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The [atomic consumer](docs/consumer.md) now reserves uses with its authorization audit record. The listeners and forwarder are still in development.
 
-The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLite using NaCl secretbox. It loads its key from an environment variable or a private file. Grant issuing and the server APIs are still to come.
+The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLite using NaCl secretbox. It loads its key from an environment variable or a private file. The [internal grant API](docs/grants.md) now handles issuing, inspection and revocation. The server APIs and CLI grant commands are still to come.

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -38,7 +39,7 @@ func insertGrant(s *Store, id string, version, uses int, hash []byte) error {
 func TestOpenReopenAndSettings(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tokening ?#%.db")
 	s := openTest(t, path)
-	for _, tt := range []struct{ pragma, want string }{{"journal_mode", "wal"}, {"foreign_keys", "1"}, {"synchronous", "2"}, {"busy_timeout", "5000"}, {"user_version", "1"}} {
+	for _, tt := range []struct{ pragma, want string }{{"journal_mode", "wal"}, {"foreign_keys", "1"}, {"synchronous", "2"}, {"busy_timeout", "5000"}, {"user_version", strconv.Itoa(len(migrations))}} {
 		var got string
 		if err := s.db.QueryRow("PRAGMA " + tt.pragma).Scan(&got); err != nil {
 			t.Fatal(err)
@@ -134,7 +135,7 @@ func TestDecisionsAppendOnly(t *testing.T) {
 func TestMigrationRollbackAndFutureVersion(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "db")
 	s := openTest(t, path)
-	steps := []string{initialSchema, `CREATE TABLE rollback_probe (id INTEGER); INSERT INTO nonexistent_table VALUES (1);`}
+	steps := append(append([]string(nil), migrations...), `CREATE TABLE rollback_probe (id INTEGER); INSERT INTO nonexistent_table VALUES (1);`)
 	if err := migrate(context.Background(), s.db, steps); err == nil {
 		t.Fatal("invalid migration succeeded")
 	}
@@ -142,7 +143,7 @@ func TestMigrationRollbackAndFutureVersion(t *testing.T) {
 	if err := s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	if version != 1 {
+	if version != len(migrations) {
 		t.Fatalf("failed migration advanced version: %d", version)
 	}
 	var count int

@@ -28,7 +28,7 @@ the version. A database made by a newer schema is refused rather than downgraded
 The initial schema has targets, versioned templates, grants and decisions.
 A grant references the exact `(template_id, template_version)` that issued it.
 Template versions cannot be updated or deleted. A policy change will create a new
-version; reload and issuance are separate work still to come.
+version. [Policy application and grant issuance](grants.md) are now implemented internally; the server still needs to wire policy reload to its signal handler.
 
 Grant secrets have a unique, 32-byte hash column, with no plaintext secret column.
 Counters cannot be negative or exceed the initial allowance. Times are UTC Unix

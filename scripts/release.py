@@ -30,7 +30,7 @@ def command(args, **kwargs):
 
 
 def version(root=ROOT):
-    match = re.search(r'^const version = "(\d+\.\d+\.\d+)"$', (root / 'cmd/tokening/main.go').read_text(), re.M)
+    match = re.search(r'^const version = "(\d+\.\d+\.\d+)"$', (root / 'cmd/tokening/main.go').read_text(encoding='utf-8'), re.M)
     if not match:
         raise RuntimeError('A plain semantic version constant is needed')
     return match[1]
@@ -50,7 +50,7 @@ def source_digest(root=ROOT):
 
 
 def check_review(root=ROOT):
-    record = json.loads((root / 'release-readiness.json').read_text())
+    record = json.loads((root / 'release-readiness.json').read_text(encoding='utf-8'))
     if record.get('version') != version(root) or record.get('status') != 'approved' or record.get('source_sha256') != source_digest(root):
         raise RuntimeError('The release source does not match an approved independent review')
     return record
@@ -111,7 +111,7 @@ def prepare():
         output({'release': 'false'})
         return
     readiness = ROOT / 'release-readiness.json'
-    if not readiness.exists() or json.loads(readiness.read_text()).get('status') == 'pending':
+    if not readiness.exists() or json.loads(readiness.read_text(encoding='utf-8')).get('status') == 'pending':
         print('Independent review is pending; nothing will be published.')
         output({'release': 'false'})
         return
@@ -207,21 +207,27 @@ def smoke(binary, log):
                 raise RuntimeError('Unix smoke server did not shut down cleanly')
 
 
+def record_native_tests(logs):
+    # Module downloads and compiler diagnostics are stderr, not JSON events.
+    with (logs / 'tests.jsonl').open('w') as recording, (logs / 'test-stderr.log').open('w') as diagnostic:
+        result = subprocess.run(['go', 'test', '-count=1', '-json', './...'], cwd=ROOT, stdout=recording, stderr=diagnostic)
+    if result.returncode:
+        print((logs / 'test-stderr.log').read_text(encoding='utf-8')[-16000:])
+        print((logs / 'tests.jsonl').read_text(encoding='utf-8')[-16000:])
+        raise RuntimeError('Native tests failed; complete stdout and stderr diagnostics are retained')
+    return test_summary(logs / 'tests.jsonl')
+
+
 def build(target):
     check_review()
     goos, arch = target.split('-')
     if command(['go', 'env', 'GOHOSTOS']) != goos or command(['go', 'env', 'GOHOSTARCH']) != arch:
         raise RuntimeError('Each release binary must be built and tested on its native architecture')
-    if command(['go', 'env', 'GOVERSION']) != 'go' + (ROOT / '.go-version').read_text().strip():
+    if command(['go', 'env', 'GOVERSION']) != 'go' + (ROOT / '.go-version').read_text(encoding='utf-8').strip():
         raise RuntimeError('Release toolchain does not match .go-version')
     logs = ROOT / 'test/results/local' / ('release-' + target)
     logs.mkdir(parents=True, exist_ok=True)
-    with (logs / 'tests.jsonl').open('w') as recording:
-        result = subprocess.run(['go', 'test', '-count=1', '-json', './...'], cwd=ROOT, stdout=recording, stderr=subprocess.STDOUT)
-    if result.returncode:
-        print((logs / 'tests.jsonl').read_text()[-16000:])
-        raise RuntimeError('Native tests failed; full JSONL diagnostics are retained')
-    failure_results = test_summary(logs / 'tests.jsonl')
+    failure_results = record_native_tests(logs)
     dist = ROOT / 'dist'
     dist.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='tokening-package-') as directory:
@@ -246,7 +252,7 @@ def build(target):
 
 def test_summary(path):
     outcomes, race = {}, None
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding='utf-8').splitlines():
         record = json.loads(line)
         if record.get('Test') and record.get('Action') in ('pass', 'fail', 'skip'):
             outcomes[record['Test']] = record['Action']
@@ -279,7 +285,7 @@ def publish():
             raise RuntimeError('Main changed during the build; wait for its green CI')
     reports = []
     for target in TARGETS:
-        report = json.loads((dist / (target + '.json')).read_text())
+        report = json.loads((dist / (target + '.json')).read_text(encoding='utf-8'))
         archive = dist / report['archive']
         expected = 'tokening-' + target + ('.zip' if target.startswith('windows') else '.tar.gz')
         if report['archive'] != expected or report['source_commit'] != sha or report['version'] != version() or report['native_tests'] != 'passed' or report['archive_smoke'] != 'passed' or hashlib.sha256(archive.read_bytes()).hexdigest() != report['sha256']:
@@ -288,8 +294,8 @@ def publish():
     checks = {}
     for runner in ('ubuntu-latest', 'macos-latest'):
         checks[runner] = test_summary(evidence / 'tests' / ('check-log-' + runner) / 'tests.jsonl')
-    replay = json.loads((evidence / 'demo/replay.json').read_text())
-    browser = json.loads((evidence / 'panel/browser-results.json').read_text())
+    replay = json.loads((evidence / 'demo/replay.json').read_text(encoding='utf-8'))
+    browser = json.loads((evidence / 'panel/browser-results.json').read_text(encoding='utf-8'))
     if replay['passed'] is not True or browser['passed'] is not True or browser['offline_network_requests'] != 0 or replay['wordpress']['writes'] != 2 or replay['wordpress']['deletes'] != 0 or replay['agent']['parallel_winners'] != 1 or replay['agent']['isolation'] != 'passed':
         raise RuntimeError('Demo or browser evidence failed')
     shutil.copyfile(evidence / 'demo/replay.html', dist / 'demo-replay.html')

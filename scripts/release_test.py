@@ -1,9 +1,12 @@
 import importlib.util
+import contextlib
+import io
 import json
 import pathlib
 import re
 import subprocess
 import tempfile
+import types
 import unittest
 from unittest import mock
 
@@ -78,6 +81,29 @@ class ReleaseGuardTests(unittest.TestCase):
         self.assertTrue(release.latest_allowed('v0.2.0',{'tag_name':'v0.1.0'}))
         self.assertTrue(release.latest_allowed('v0.1.0',None))
         self.assertFalse(release.latest_allowed('v0.1.0',{'tag_name':'unknown-channel'}))
+
+    def test_native_download_diagnostics_do_not_corrupt_json_recording(self):
+        def run(args,**kwargs):
+            kwargs['stderr'].write('go: downloading a dependency\n')
+            for name in release.REQUIRED:
+                kwargs['stdout'].write(json.dumps({'Test':name,'Action':'pass'})+'\n')
+            kwargs['stdout'].write(json.dumps({'Output':json.dumps({'consumer_race':{'runs':1000,'allowed':1000,'exhausted':1000,'callers_per_run':2,'remaining_uses':0}})})+'\n')
+            return types.SimpleNamespace(returncode=0)
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(release.subprocess,'run',side_effect=run):
+            logs=pathlib.Path(directory)
+            self.assertEqual(release.record_native_tests(logs)['consumer_race']['runs'],1000)
+            self.assertIn('downloading',(logs/'test-stderr.log').read_text())
+            self.assertNotIn('downloading',(logs/'tests.jsonl').read_text())
+
+    def test_nonzero_native_test_exit_still_blocks_packaging(self):
+        def run(args,**kwargs):
+            kwargs['stderr'].write('synthetic compiler failure\n')
+            return types.SimpleNamespace(returncode=1)
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(release.subprocess,'run',side_effect=run), contextlib.redirect_stdout(io.StringIO()):
+            logs=pathlib.Path(directory)
+            with self.assertRaises(RuntimeError):
+                release.record_native_tests(logs)
+            self.assertIn('compiler failure',(logs/'test-stderr.log').read_text())
 
 
 if __name__ == '__main__':

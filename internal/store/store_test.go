@@ -37,7 +37,11 @@ func insertGrant(s *Store, id string, version, uses int, hash []byte) error {
 	return err
 }
 func TestOpenReopenAndSettings(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "tokening ?#%.db")
+	name := "tokening #%.db"
+	if runtime.GOOS != "windows" {
+		name = "tokening ?#%.db"
+	}
+	path := filepath.Join(t.TempDir(), name)
 	s := openTest(t, path)
 	for _, tt := range []struct{ pragma, want string }{{"journal_mode", "wal"}, {"foreign_keys", "1"}, {"synchronous", "2"}, {"busy_timeout", "5000"}, {"user_version", strconv.Itoa(len(migrations))}} {
 		var got string

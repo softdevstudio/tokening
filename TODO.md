@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. Admin/server/CLI integration is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The Docker WordPress demo is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -36,7 +36,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] REST passthrough at `/http/{target}/...`
 - [x] `GET /grant` self-description
 - [x] Forwarder with credential injection (REST and MCP HTTP; stdio remains v0.2)
-- [ ] Admin listener and admin API; CLI as its client
+- [x] Admin listener and admin API; CLI as its client
 
 ### Demo
 - [ ] `demo/docker-compose.yml`: WordPress, MCP adapter plugin, seeded posts, Tokening
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Wired the binary to separate agent and admin HTTP listeners, with loopback defaults, bounded startup/shutdown and Unix SIGHUP policy reload. Added admin authentication, validated encrypted credential upload, active template listing, grant issue/inspect/revoke, decision polling/SSE and JSONL completion trailers. Added thin CLI clients, key generation and an environment-name-only doctor. Shared the strict duplicate-key JSON parser between agent and admin paths. Tests cover operator and agent token separation, route isolation, strict input, actual forwarding through running listeners, saved grant versions across reload, failed reload preservation, startup bind cleanup, shutdown persistence and CLI redirects/binding errors. Restored the cleared scratch Go toolchain. CGO-free format/vet/full tests/build, admin/server/CLI race tests and a real-binary command/signal smoke test passed. Updated the README and server reference. Next: Docker WordPress demo, deterministic agent and admin panel. Explain remains a later-phase command. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added the internal MCP HTTP endpoint with local grant-filtered discovery, initialization, ping and tool calls. Normalized calls consume before private upstream initialization; each call gets its own credential-injected upstream session, bounded JSON/SSE response handling and best-effort session deletion. Refusals are readable MCP tool errors, with linked completion audit records and no refunds. Tests cover audited unknown-token refusals, JSON/SSE, hidden credentials/session IDs, metadata without consumption, wrong tools and bindings, exhaustion, malformed messages and concurrent one-use calls. Documented the pinned protocol and buffered transport limits. Next: running server, admin API and CLI wiring. No release published.
 

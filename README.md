@@ -2,24 +2,63 @@
 
 Narrow permissions for AI agents.
 
-AI agents usually get the same credentials a human admin would, because most APIs offer nothing narrower. Tokening sits between the agent and the API and issues grants for single actions: update this post, once, title and body only, within fifteen minutes. The agent never sees the real key. Every call is checked against its grant, and every refusal comes with a reason a person can read.
+Tokening sits between an agent and an API and issues grants for single actions: update this post, once, title and body only, within fifteen minutes. Every call is checked against its grant. Refusals include a machine code and a reason a person can read.
 
 The real upstream credential must stay in Tokening, outside the agent environment. The admin listener must also be unreachable by agents. A grant cannot prevent bypass if the agent already has the real credential.
 
-Status: early development. The command scaffold supports `tokening version` and `tokening help` and `tokening check examples/wordpress.json`; the gateway is not implemented yet. Build it with `make build` using Go 1.23 or newer. Run checks with `make test`. `make demo` will fail with an explanation until the Docker demo is ready. The plan is in [docs/plan.md](docs/plan.md).
+This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo, its panel and the release checks are still pending. make demo fails with an explanation until the demo is ready. The approved scope is in [the plan](docs/plan.md).
+
+## Build and run
+
+Build with Go 1.23 or newer:
+
+```sh
+make test
+make build
+bin/tokening check examples/wordpress.json
+```
+
+Create a private state directory and use different random secrets for the vault and the admin API:
+
+```sh
+umask 077
+mkdir tokening-state
+cd tokening-state
+/path/to/tokening keygen > vault.key
+/path/to/tokening keygen > admin.token
+export TOKENING_ADMIN_TOKEN="$(cat admin.token)"
+/path/to/tokening serve --policy /path/to/tokening.json --db tokening.db --key-file vault.key
+```
+
+The agent listener defaults to 127.0.0.1:8080 and the admin listener to 127.0.0.1:8081. The listeners speak HTTP. Keep them local or use private networking and a TLS reverse proxy. Save the vault key alongside secure backups, outside the database. See [running Tokening](docs/server.md) for listener options, policy reloads, the admin API and shutdown behavior.
+
+## Issue a grant
+
+The operator CLI talks to the admin port. It uses TOKENING_ADMIN_TOKEN and, optionally, TOKENING_ADMIN_URL. First declare a target and template in the policy. Then store the real credential in the vault and issue a narrower grant:
+
+```sh
+tokening target add demo-wp --cred-file wordpress-credential.json
+tokening template list
+tokening grant issue wp.edit-post-text \
+  --bind id=2 --uses 1 --ttl 15m --to editor-bot \
+  --by operator --reason "fix title"
+```
+
+Credential files contain JSON, such as {"username":"operator","password":"application-password"} for a basic-auth target. The upload reply never echoes the credential. Issuance returns JSON with grant metadata and its secret. Only that secret goes to the agent. Inspection and revocation never return it again:
+
+```sh
+tokening grant inspect g_ID
+tokening grant revoke g_ID --by operator
+tokening log --follow
+tokening log --export > decisions.jsonl
+```
+
+The agent sends its grant in Authorization: Bearer to POST /mcp/{target}, /http/{target}/... or GET /grant. MCP tools/list is derived from the saved grant. Tool calls and REST calls consume a use in the same SQLite transaction as the authorization record, before forwarding. Upstream failures still spend the use. Neither the server nor the CLI retries writes automatically.
+
+Run tokening doctor in the agent environment to look for common credential variable names. It reports names only, cannot find every credential source and cannot inspect another process.
+
+## Reference
+
+The [policy reference](docs/policy.md) covers templates and constraints. The [matcher](docs/matcher.md) is pure; the [consumer](docs/consumer.md) handles atomic use reservations. [Storage](docs/storage.md), [vault](docs/vault.md) and [grants](docs/grants.md) describe persistence and credential custody. [Audit](docs/audit.md) covers JSONL cursors and partial exports. The [REST gateway](docs/gateway.md) and [MCP adapter](docs/mcp.md) describe the forwarding boundaries and transport limits.
 
 Licence: Apache 2.0.
-
-Policy files are checked locally without contacting targets or opening the credential vault. See [the policy reference](docs/policy.md) for supported fields and warnings.
-
-The internal SQLite store now supports WAL mode and atomic schema migrations. The gateway is still in development. See [storage](docs/storage.md) for persistence and backup details.
-
-The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The [atomic consumer](docs/consumer.md) now reserves uses with its authorization audit record. The listeners and forwarder are still in development.
-
-The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLite using NaCl secretbox. It loads its key from an environment variable or a private file. The [internal grant API](docs/grants.md) now handles issuing, inspection and revocation. The server APIs and CLI grant commands are still to come.
-
-The internal [audit API](docs/audit.md) now supports bounded decision queries and JSONL export with resumable cursors. The export releases its database connection before writing each page. Admin routes and CLI wiring remain in development.
-
-The internal [REST gateway](docs/gateway.md) now connects grants to HTTP forwarding, with credential injection and linked completion audit records. It also serves grant self-description. MCP, the running server and admin/CLI wiring remain in development.
-
-The internal MCP HTTP adapter now supports grant-filtered discovery and scoped tool calls, with separate upstream sessions and credentials. See [MCP gateway](docs/mcp.md) for the protocol profile and response limits. Server, admin and CLI integration are next.

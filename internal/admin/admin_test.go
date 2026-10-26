@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -155,3 +156,44 @@ type cancelWriter struct {
 }
 
 func (w *cancelWriter) Flush() { w.ResponseRecorder.Flush(); w.cancel() }
+
+func TestPanelShellIsPublicButSnapshotNeedsAdminToken(t *testing.T) {
+	h, _ := testHandler(t)
+	for _, path := range []string{"/admin/panel", "/admin/panel.js", "/admin/panel.css"} {
+		w := request(h, "GET", path, "", "")
+		if w.Code != 200 || w.Header().Get("Content-Security-Policy") == "" || w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatal(path, w.Code)
+		}
+		if strings.Contains(w.Body.String(), testToken) {
+			t.Fatal("shell embeds admin token")
+		}
+	}
+	if w := request(h, "GET", "/admin/demo", "", ""); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	if w := request(h, "GET", "/admin/demo", "", testToken); w.Code != 404 {
+		t.Fatal(w.Code)
+	}
+	h.demoReplayFile = filepath.Join(t.TempDir(), "pending.json")
+	if w := request(h, "GET", "/admin/demo", "", testToken); w.Code != 503 {
+		t.Fatal(w.Code)
+	}
+	if err := os.WriteFile(h.demoReplayFile, []byte(`{"schema":1,"passed":true}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(h, "GET", "/admin/demo", "", testToken); w.Code != 503 {
+		t.Fatal(w.Code)
+	}
+	source, err := os.ReadFile("../panel/testdata/replay.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(h.demoReplayFile, source, 0600); err != nil {
+		t.Fatal(err)
+	}
+	response := request(h, "GET", "/admin/demo", "", testToken)
+	if response.Code != 200 || strings.Contains(response.Body.String(), "never-export-") {
+		t.Fatal("unsafe snapshot response", response.Code, response.Body.String())
+	}
+
+}

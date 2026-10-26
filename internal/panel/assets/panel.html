@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><!-- replay-policy --><title>Tokening permission console</title><link rel="stylesheet" href="/admin/panel.css"><script defer src="/admin/panel.js"></script></head>
+<body>
+<header><a class="wordmark" href="#">tokening<span class="dot">.</span></a><span id="mode" class="pill">Operator console</span></header>
+<main><section class="intro"><p class="eyebrow">A grant for one task</p><h1>Every call has a boundary.</h1><p id="subtitle">Watch a grant and its decisions. The real credential stays in the vault.</p></section>
+<form id="connect-form" class="connect card"><label>Admin token<input id="token" type="password" autocomplete="off" required placeholder="Kept only in this page's memory"></label><label>Grant ID<input id="grant-id" required spellcheck="false" autocomplete="off" placeholder="g_…"></label><button type="submit">Connect</button><button id="disconnect" class="secondary" type="button" disabled>Disconnect</button></form>
+<div id="replay-controls" class="controls" hidden><button id="restart" type="button">Replay from start</button><button id="next" type="button" class="secondary">Next decision</button><button id="final" type="button" class="secondary">Show final state</button><span id="progress"></span></div>
+<p id="notice" role="status" aria-live="polite">Connect with an operator token to read live decisions. This page cannot issue or revoke grants.</p>
+<div class="workspace"><aside><section class="card"><div class="section-top"><h2>Grant</h2><span id="grant-count" class="muted"></span></div><div id="grants"><p class="muted">No grant loaded.</p></div></section><section id="post-section" class="card" hidden><p class="eyebrow">Verified WordPress snapshot</p><h2 id="post-title"></h2><p id="post-meta" class="muted"></p><pre id="post-content"></pre><p id="post-note" class="muted"></p></section></aside>
+<section class="card audit"><div class="section-top"><h2>Decision log</h2><span id="totals" class="muted">Waiting for records</span></div><p class="muted explain">An authorization spends a use. Its upstream outcome is a separate linked record.</p><ol id="decisions"><li class="empty">No decisions loaded.</li></ol></section></div>
+<footer>Read-only view · No upstream credential is sent to this page.</footer></main><script type="application/json" id="replay-data">null</script>
+</body></html>

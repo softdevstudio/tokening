@@ -19,6 +19,7 @@ import (
 
 type Config struct {
 	PolicyFile, Database, KeyFile, AdminToken string
+	DemoReplayFile                            string
 	AgentAddress, AdminAddress                string
 	AllowedOrigins                            []string
 	Reload                                    <-chan struct{}
@@ -48,7 +49,7 @@ func Run(ctx context.Context, c Config, ready func(agent, admin string)) error {
 	if err = s.ApplyPolicy(ctx, *p); err != nil {
 		return err
 	}
-	a, err := admin.New(s, v, c.AdminToken)
+	a, err := admin.New(s, v, c.AdminToken, admin.Options{DemoReplayFile: c.DemoReplayFile})
 	if err != nil {
 		return err
 	}

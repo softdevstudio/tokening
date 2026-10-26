@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "passed": true,
+  "grants": [
+    {
+      "id": "g_demo",
+      "target": "wp",
+      "tool": "wp_update_post",
+      "state": "exhausted",
+      "initial_uses": 1,
+      "uses_left": 0,
+      "expires_at": "2026-10-26T12:15:00Z",
+      "secret": "never-export-secret",
+      "bound_args": {
+        "id": {
+          "value": 2
+        },
+        "private": {
+          "value": "never-export-binding"
+        }
+      }
+    }
+  ],
+  "audit": [
+    {
+      "id": 1,
+      "grant_id": "g_demo",
+      "at": "2026-10-26T12:00:00Z",
+      "action": "wp_update_post",
+      "outcome": "allowed",
+      "code": "allowed",
+      "reason": "Allowed.",
+      "authorization_id": null
+    },
+    {
+      "id": 2,
+      "grant_id": "g_demo",
+      "at": "2026-10-26T12:00:01Z",
+      "action": "wp_update_post",
+      "outcome": "allowed",
+      "code": "allowed",
+      "reason": "Completed.",
+      "authorization_id": 1
+    }
+  ],
+  "wordpress": {
+    "posts": [
+      {
+        "id": 2,
+        "title": "Edited",
+        "content": "Original body",
+        "status": "publish"
+      }
+    ],
+    "writes": 1,
+    "deletes": 0
+  },
+  "agent": {
+    "isolation": "passed",
+    "parallel_winners": 1
+  },
+  "credential": "never-export-credential"
+}

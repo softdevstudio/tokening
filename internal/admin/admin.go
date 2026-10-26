@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/softdevstudio/tokening/internal/panel"
 	"io"
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,13 +24,16 @@ import (
 	"github.com/softdevstudio/tokening/internal/vault"
 )
 
+type Options struct{ DemoReplayFile string }
+
 type Handler struct {
-	store *store.Store
-	vault *vault.Vault
-	token [32]byte
+	demoReplayFile string
+	store          *store.Store
+	vault          *vault.Vault
+	token          [32]byte
 }
 
-func New(s *store.Store, v *vault.Vault, token string) (*Handler, error) {
+func New(s *store.Store, v *vault.Vault, token string, options ...Options) (*Handler, error) {
 	if s == nil || v == nil || len(token) < 32 || len(token) > 512 || strings.ContainsAny(token, " \t\r\n") {
 		return nil, errors.New("admin token must contain 32 to 512 non-whitespace characters")
 	}
@@ -37,7 +42,11 @@ func New(s *store.Store, v *vault.Vault, token string) (*Handler, error) {
 			return nil, errors.New("admin token must use visible ASCII characters")
 		}
 	}
-	return &Handler{store: s, vault: v, token: sha256.Sum256([]byte(token))}, nil
+	file := ""
+	if len(options) > 0 {
+		file = options[0].DemoReplayFile
+	}
+	return &Handler{store: s, vault: v, token: sha256.Sum256([]byte(token)), demoReplayFile: file}, nil
 }
 func reply(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -54,6 +63,31 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(r.Header.Values("Origin")) != 0 {
 		problem(w, 403, "Browser origins are not allowed on the admin API.")
 		return
+	}
+	if r.Method == "GET" && r.URL.RawQuery == "" {
+		asset := ""
+		switch r.URL.Path {
+		case "/admin/panel":
+			asset = "panel.html"
+		case "/admin/panel.js":
+			asset = "panel.js"
+		case "/admin/panel.css":
+			asset = "panel.css"
+		}
+		if asset != "" {
+			w.Header().Set("Referrer-Policy", "no-referrer")
+			w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+			contentType := "text/html; charset=utf-8"
+			if asset == "panel.js" {
+				contentType = "application/javascript; charset=utf-8"
+			}
+			if asset == "panel.css" {
+				contentType = "text/css; charset=utf-8"
+			}
+			w.Header().Set("Content-Type", contentType)
+			_, _ = w.Write(panel.Asset(asset))
+			return
+		}
 	}
 	auth := r.Header.Values("Authorization")
 	valid := false
@@ -75,6 +109,32 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Path
 	switch {
+	case path == "/admin/demo" && r.Method == "GET":
+		if r.URL.RawQuery != "" {
+			problem(w, 400, "Unexpected query parameters.")
+			return
+		}
+		if h.demoReplayFile == "" {
+			problem(w, 404, "No demo snapshot is configured.")
+			return
+		}
+		file, err := os.Open(h.demoReplayFile)
+		if err != nil {
+			problem(w, 503, "Demo snapshot is not ready.")
+			return
+		}
+		defer file.Close()
+		info, err := file.Stat()
+		if err != nil || !info.Mode().IsRegular() || info.Size() > panel.MaxReplayBytes {
+			problem(w, 503, "Demo snapshot is unavailable.")
+			return
+		}
+		snapshot, err := panel.Decode(file)
+		if err != nil {
+			problem(w, 503, "Demo snapshot is unavailable.")
+			return
+		}
+		reply(w, 200, snapshot)
 	case path == "/admin/templates" && r.Method == "GET":
 		if r.URL.RawQuery != "" {
 			problem(w, 400, "Unexpected query parameters.")

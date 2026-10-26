@@ -14,6 +14,8 @@ const version = "0.1.0"
 func run(args []string, out, errOut io.Writer) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "replay":
+			return replayCommand(args[1:], out, errOut)
 		case "target", "template", "grant", "log":
 			return adminCommand(args, out, errOut)
 		case "doctor":
@@ -70,7 +72,7 @@ func run(args []string, out, errOut io.Writer) int {
 func usage(out io.Writer) {
 	fmt.Fprintln(out, "Tokening: narrow permissions for AI agents.")
 	fmt.Fprintln(out, "Usage: tokening <command>")
-	fmt.Fprintln(out, "Commands: serve, check <policy.json>, target, template, grant, log, doctor, keygen, version, help")
+	fmt.Fprintln(out, "Commands: serve, check <policy.json>, target, template, grant, log, replay, doctor, keygen, version, help")
 	fmt.Fprintln(out, "Development build. Run tokening serve --help for listener options.")
 }
 

@@ -20,7 +20,7 @@ An unknown grant filter returns an empty result.
 
 Each exported line is a complete JSON object with `id`, `grant_id`, UTC `at`,
 `agent`, `action`, `args_digest`, `outcome`, `code`, `reason`, `upstream_status`
-and `latency_ms`. The digest is lowercase SHA-256 hex. Nullable fields remain
+and `latency_ms`, plus nullable `authorization_id` linking an upstream completion to its original authorization. The digest is lowercase SHA-256 hex. Nullable fields remain
 JSON null. A method and path identify a REST action; an MCP action is its tool
 name. The export selects audit columns only. It does not select bearer hashes,
 secrets, credential ciphertext, bindings or upstream response bodies. Action
@@ -47,9 +47,7 @@ an arbitrary blocking `io.Writer` by itself; the transport must unblock its own
 writer when the client disconnects. No database connection is held during a
 writer call. Exporting does not mutate decisions, grant counters or credentials.
 
-Authorization rows currently have null upstream status and latency. The
-forwarder stage will record its outcome metadata when that integration exists;
-this exporter already preserves those nullable fields. A completed export is
+Authorization rows have null upstream status and latency. The [REST forwarder](gateway.md) now appends a linked completion record with outcome metadata; it does not modify the original authorization. Only one completion is allowed per authorization. A completed export is
 not proof that an authorized upstream write succeeded. This is also an
 append-only application log, not a tamper-evident system against someone who can
 rewrite the database or remove its triggers.

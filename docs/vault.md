@@ -47,5 +47,4 @@ whole environment.
 Tests check round trips, fresh nonces, every-byte tampering and every truncation,
 wrong keys, cross-target swapping, input limits and key-source validation.
 Persistence tests inspect the SQLite column, main file and live WAL/SHM files for
-the known test plaintext, then reopen and decrypt the credential. The gateway and
-credential injection are still separate tasks.
+the known test plaintext, then reopen and decrypt the credential. The [REST gateway](gateway.md) now injects credentials after committed authorization. MCP forwarding and running listeners remain separate tasks.

@@ -39,7 +39,7 @@ that the upstream operation happened.
 Revocation and consumption serialize through the same database. A revocation
 that commits first prevents the reservation. Once consumption commits, later
 revocation cannot cancel that already authorized call; it blocks subsequent
-reservations. The gateway will need to preserve this boundary when forwarding.
+reservations. The [REST gateway](gateway.md) now preserves this boundary when forwarding.
 Adding a template version does not change the version referenced by a live grant.
 
 Tests race two independent SQLite connections on each of 1,000 one-use grants,
@@ -50,6 +50,4 @@ failures, check expiry after matching, and check queued revocation and expiry.
 The JSONL test script records the race counts in `test/results/local/tests.jsonl`
 and CI preserves that file as an artifact. Cached test results are disabled.
 
-The listeners and forwarder are still to come. These tests exercise the storage
-boundary and saved template versions; live policy reload and a real in-flight
-upstream request will also need gateway integration tests.
+The REST handler and forwarder now have integration tests for saved policy versions and a real in-flight upstream request. MCP and running listeners remain to come.

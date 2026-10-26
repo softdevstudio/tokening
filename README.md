@@ -19,3 +19,5 @@ The internal [permission matcher](docs/matcher.md) checks grant snapshots withou
 The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLite using NaCl secretbox. It loads its key from an environment variable or a private file. The [internal grant API](docs/grants.md) now handles issuing, inspection and revocation. The server APIs and CLI grant commands are still to come.
 
 The internal [audit API](docs/audit.md) now supports bounded decision queries and JSONL export with resumable cursors. The export releases its database connection before writing each page. Admin routes and CLI wiring remain in development.
+
+The internal [REST gateway](docs/gateway.md) now connects grants to HTTP forwarding, with credential injection and linked completion audit records. It also serves grant self-description. MCP, the running server and admin/CLI wiring remain in development.

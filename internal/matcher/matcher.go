@@ -107,7 +107,7 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 			if c.Method == "" {
 				return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call was not a REST request.", g.Template.Method, g.Template.Path))
 			}
-			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call used %s on another path.", g.Template.Method, g.Template.Path, quoteShort(c.Method)))
+			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call used %s.", g.Template.Method, g.Template.Path, quoteShort(c.Method)))
 		}
 		pathArgs, ok := extractPath(g.Template.Path, c.Path)
 		if !ok {

@@ -58,9 +58,17 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo replay on the home page; footer "A SoftDevStudio.com project"
 - [x] Add Tokening to softdevstudio.com
 
+## v0.1.2 follow-ups (from the v0.1.1 review, none blocking)
+
+- [ ] Right method with an unsafe path reads "call used PATCH"; say it used a path the grant does not allow
+- [ ] Cover the "does not allow any query parameter" wording with a REST grant test
+- [ ] Cover the replay's 8-argument cap and sorted order in the panel test
+
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, Claude.** Owner asked to review and rewrite the website. Refusal reasons now name what the grant allows and what the call did (numbers shown, strings never). The replay is step-by-step with captions, the agent's request per row, the post changing, short IDs and an ?embed mode that sizes its frame; the demo records requests and pre-run posts. Browser check failures were diagnosed by surfacing the log tail as one annotation (artifact and log hosts are blocked from cloud sessions): a step-0 title expectation, then the header overflowing 390px. Independent review: changes requested, fixed, approved (docs/review-v0.1.1.md). Version 0.1.1 marked approved for the automated release. Website rewritten on branch site-rewrite in photozeitgeist/tokening.net (new pages, 12 posts, 6 SVG diagrams); merge after the 0.1.1 replay and evidence are copied in. softdevstudio.com's Tokening note links to four removed post URLs; that repo was not reachable from this session.
 
 - **2026-10-26, ChatGPT.** Pulled main and read the instructions and plan. Fixed the replay's internal tokening.net wordmark and contained the demo iframe in the article column by wrapping it so the retained theme's direct-child full-width iframe rule no longer applies. No theme file changed. Added two measured case studies (scoped WordPress edit and parallel single-use consumption), two explicitly illustrative use examples (editorial grants and REST maintenance), and a SoftDevStudio.com note linking all four. Hugo build and all local-link checks passed. Live browser check confirmed the iframe and article share the same 740-pixel bounds, the inner tokening.net wordmark is present, and replay controls work.
 

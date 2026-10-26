@@ -6,3 +6,5 @@
 .env
 *.key
 tokening.json
+
+__pycache__/

@@ -1,0 +1,17 @@
+# Docker WordPress demonstration
+
+Run make demo from the repository root. It needs Docker with Compose v2 and Python 3 on the host. It builds Tokening from the checkout, installs a pinned official WordPress MCP adapter in a disposable WordPress container, seeds posts 1, 2 and 3, and runs a deterministic MCP agent. It never connects to a public site and accepts no external target URL.
+
+The first run downloads container images and builds the Go binary. The scripted calls take place after startup. All volumes belong to a randomly named Compose project and are deleted when the run finishes, including after a failed assertion. To keep this particular throwaway project for inspection, run python3 demo/run.py --keep. The script prints its exact cleanup command.
+
+The operator creates two one-use, fifteen-minute grants for post 2. The agent initializes MCP, lists the single allowed tool, edits the title, repeats the edit, tries post 3, tries the delete tool, then makes two simultaneous calls with the second grant. The script asserts one winner in the final pair. The separate Go test suite records the 1,000-run consumer race; CI runs both that suite and this Docker demonstration.
+
+The agent receives grant secrets over stdin. It has no operator token, vault key or application password. Docker puts it on a network shared only with Tokening's agent interface. WordPress and MariaDB use another internal network, and the admin listener binds only to loopback inside the Tokening container. Before running calls, the agent checks that it cannot connect to the admin port, WordPress or the database. There are no published container ports. The host-side operator uses docker compose exec for admin commands and final verification.
+
+The WordPress plugin deliberately offers broader tools than the issued grant: update any post's title, content or status, read a post, and delete a post. It uses real WordPress abilities and the official adapter. WordPress authenticates Tokening with a generated application password. Tokening stores it in its encrypted vault; the agent does not receive it. The generated secrets volume is restricted to the bootstrap, seeding and Tokening services.
+
+The operator checks the final WordPress state directly after the agent exits. Post 1 and post 3 must retain their seed titles. Post 2 must have the title Parallel edit, its original body and published status. There must be exactly two executed writes and no deletes. The audit export must contain two authorizations, their two successful completions and four refusals. Both grants must be exhausted.
+
+Results are saved in test/results/local/demo/. replay.json contains the inspected grants, agent steps, WordPress state and audit records. decisions.jsonl is the actual admin audit export. The runner checks that generated grant secrets are absent from these artifacts. compose.log and run.log (in CI) retain diagnostics. These files are ignored in git and uploaded by CI. The visual admin panel and standalone HTML replay are the next demo work.
+
+The demo uses WordPress 6.9.4, MariaDB 11.4 and the official MCP Adapter 0.7.1. The adapter ZIP is checked against its release SHA-256 digest. Tokening proposes upstream MCP 2025-11-25 and retains its agent-facing 2025-06-18 profile. See docs/mcp.md for transport limits. Third-party image and plugin licenses are listed in THIRD_PARTY_LICENSES.md at the repository root.

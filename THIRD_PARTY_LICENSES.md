@@ -24,3 +24,9 @@ pinned in `go.mod` and `go.sum`.
 The Go standard library is BSD-licensed; its [license text](third_party/go.txt)
 is included. Include this file and the `third_party` directory with binary
 distributions. Update the table and notice files whenever a dependency changes.
+
+## Disposable Docker demonstration
+
+The Go binary has no new dependencies for the demonstration. Compose downloads separate WordPress, MariaDB, Python, Alpine and Go container images, retaining the notices distributed with those images. WordPress is GPL-2.0-or-later (https://wordpress.org/about/license/); MariaDB server is GPL-2.0 (https://mariadb.com/kb/en/mariadb-licenses/); Python is distributed under the PSF license (https://docs.python.org/3/license.html). Container base distributions include packages under their respective licenses.
+
+The WordPress image also downloads the official WordPress MCP Adapter 0.7.1 release, licensed GPL-2.0-or-later, from https://github.com/WordPress/mcp-adapter/releases/tag/v0.7.1. Its bundled license and dependency notices remain in the installed plugin. The ZIP SHA-256 is c8bc28f83d3c39beffa2add4f6becc0b1ae54097df433697d1dbe6520a80d769. This plugin is used in the disposable WordPress container, not linked into the Tokening Go binary. The demo abilities source in this repository is authored for Tokening.

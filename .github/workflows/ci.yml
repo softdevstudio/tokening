@@ -40,3 +40,25 @@ jobs:
         with:
           name: check-log-${{ matrix.os }}
           path: test/results/local/
+
+  demo:
+    name: Docker WordPress demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the disposable WordPress demo
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test/results/local/demo
+          if ! python3 demo/run.py 2>&1 | tee test/results/local/demo/run.log; then
+            echo "::error::Docker demo failed. Read the demo diagnostics artifact."
+            exit 1
+          fi
+      - name: Preserve demo diagnostics and replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-wordpress-demo
+          path: test/results/local/demo/

@@ -7,5 +7,4 @@ build:
 	CGO_ENABLED=0 go build -trimpath -o bin/tokening ./cmd/tokening
 
 demo:
-	@echo "The Docker demo is not implemented yet. See TODO.md."
-	@exit 1
+	python3 demo/run.py

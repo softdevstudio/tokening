@@ -6,7 +6,7 @@ Tokening sits between an agent and an API and issues grants for single actions: 
 
 The real upstream credential must stay in Tokening, outside the agent environment. The admin listener must also be unreachable by agents. A grant cannot prevent bypass if the agent already has the real credential.
 
-This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo, its panel and the release checks are still pending. make demo fails with an explanation until the demo is ready. The approved scope is in [the plan](docs/plan.md).
+This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. Its visual panel and the release checks are still pending. The approved scope is in [the plan](docs/plan.md).
 
 ## Build and run
 
@@ -56,6 +56,10 @@ tokening log --export > decisions.jsonl
 The agent sends its grant in Authorization: Bearer to POST /mcp/{target}, /http/{target}/... or GET /grant. MCP tools/list is derived from the saved grant. Tool calls and REST calls consume a use in the same SQLite transaction as the authorization record, before forwarding. Upstream failures still spend the use. Neither the server nor the CLI retries writes automatically.
 
 Run tokening doctor in the agent environment to look for common credential variable names. It reports names only, cannot find every credential source and cannot inspect another process.
+
+## Docker demonstration
+
+Run make demo with Docker Compose v2 and Python 3 installed. It creates a disposable WordPress stack, runs the deterministic seven-step agent script and checks the actual posts and audit records. The agent receives only grant secrets and cannot connect to WordPress or the admin port. No public site is used. The project volumes are removed after the run. See [the demo guide](demo/README.md) for diagnostics and replay artifacts.
 
 ## Reference
 

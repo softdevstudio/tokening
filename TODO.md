@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The Docker WordPress demo is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The visual admin panel is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -39,10 +39,10 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Admin listener and admin API; CLI as its client
 
 ### Demo
-- [ ] `demo/docker-compose.yml`: WordPress, MCP adapter plugin, seeded posts, Tokening
-- [ ] Scripted agent (deterministic) running the seven-step script
+- [x] `demo/docker-compose.yml`: WordPress, MCP adapter plugin, seeded posts, Tokening
+- [x] Scripted agent (deterministic) running the seven-step script
 - [ ] Decision log panel on the admin port; static replay export
-- [ ] Demo runs in CI
+- [x] Demo runs in CI
 
 ### Release
 - [ ] Release workflow (triggered by green CI on a new version, builds Linux/macOS/Windows, smoke tests, tags, publishes with SHA256SUMS; versionless archive names)
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added a disposable Compose stack with WordPress 6.9.4, the checksum-pinned official MCP Adapter 0.7.1, seeded posts and generated private application/vault/admin credentials. Added broad WordPress abilities and a deterministic grant-only agent on a separate internal network, including connection checks against the admin port, WordPress and database. The operator verifies real stored posts, two writes/no deletes, four refusals, linked completion records and exhausted grants, exports secret-checked JSON/JSONL replay artifacts and removes only its randomly named project's volumes. Added the Docker CI job with preserved diagnostics. Extended upstream MCP negotiation to 2025-11-25 while retaining the agent profile, with JSON/SSE version-header tests. Local CGO-free format/vet/tests/build, Python syntax and Compose structure checks passed. Docker is unavailable in the assistant environment; the new CI job verifies the real stack. Next: visual admin panel and standalone HTML replay, then the release gate and independent review. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Wired the binary to separate agent and admin HTTP listeners, with loopback defaults, bounded startup/shutdown and Unix SIGHUP policy reload. Added admin authentication, validated encrypted credential upload, active template listing, grant issue/inspect/revoke, decision polling/SSE and JSONL completion trailers. Added thin CLI clients, key generation and an environment-name-only doctor. Shared the strict duplicate-key JSON parser between agent and admin paths. Tests cover operator and agent token separation, route isolation, strict input, actual forwarding through running listeners, saved grant versions across reload, failed reload preservation, startup bind cleanup, shutdown persistence and CLI redirects/binding errors. Restored the cleared scratch Go toolchain. CGO-free format/vet/full tests/build, admin/server/CLI race tests and a real-binary command/signal smoke test passed. Updated the README and server reference. Next: Docker WordPress demo, deterministic agent and admin panel. Explain remains a later-phase command. No release published.
 

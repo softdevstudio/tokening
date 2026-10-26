@@ -1,0 +1,77 @@
+name: tokening-demo
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: throwaway-docker-only
+      MARIADB_ROOT_PASSWORD: throwaway-root-only
+    networks: [backplane]
+    volumes: [database:/var/lib/mysql]
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  bootstrap:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile
+    command: [sh, -ec, 'umask 077; test ! -e /secrets/admin.token; tokening keygen > /secrets/admin.token; tokening keygen > /secrets/vault.key']
+    network_mode: none
+    volumes: [secrets:/secrets]
+  wordpress:
+    build: ./wordpress
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: throwaway-docker-only
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: "define('WP_ENVIRONMENT_TYPE', 'local'); define('WP_HOME', 'http://wordpress'); define('WP_SITEURL', 'http://wordpress');"
+    networks: [backplane]
+    volumes: [wordpress:/var/www/html]
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, php, -r, '$$s = @fsockopen("127.0.0.1", 80); exit($$s ? 0 : 1);']
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  seed:
+    build: ./wordpress
+    entrypoint: [php, /opt/tokening/seed.php]
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: throwaway-docker-only
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: "define('WP_ENVIRONMENT_TYPE', 'local'); define('WP_HOME', 'http://wordpress'); define('WP_SITEURL', 'http://wordpress');"
+    networks: [backplane]
+    volumes: [wordpress:/var/www/html, secrets:/secrets]
+    depends_on:
+      wordpress: {condition: service_healthy}
+      bootstrap: {condition: service_completed_successfully}
+  tokening:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile
+    command: [sh, -ec, 'export TOKENING_ADMIN_TOKEN="$$(cat /secrets/admin.token)"; exec tokening serve --policy /demo/policy.json --db /state/tokening.db --key-file /secrets/vault.key --agent 0.0.0.0:8080 --admin 127.0.0.1:8081']
+    networks: [agents, backplane]
+    volumes: [state:/state, secrets:/secrets:ro, ./policy.json:/demo/policy.json:ro]
+    depends_on:
+      seed: {condition: service_completed_successfully}
+  agent:
+    image: python:3.12-alpine
+    entrypoint: [python, /demo/agent.py]
+    networks: [agents]
+    volumes: [./agent.py:/demo/agent.py:ro]
+    profiles: [agent]
+networks:
+  agents: {internal: true}
+  backplane: {internal: true}
+volumes:
+  database:
+  wordpress:
+  secrets:
+  state:

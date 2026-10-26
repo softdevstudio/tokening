@@ -28,15 +28,15 @@ type templateConstraints struct {
 // atomically spends a use with its authorization audit row. Only an allowed
 // decision AND a nil error permit forwarding. A commit error must fail closed:
 // the caller cannot assume that the transaction did not reach durable storage.
-func (s *Store) Consume(ctx context.Context, secret string, call matcher.Call) (matcher.Decision, error) {
-	var decision matcher.Decision
+func (s *Store) Consume(ctx context.Context, secret string, call matcher.Call) (Consumption, error) {
+	var decision Consumption
 	err := s.writeTx(ctx, func(tx *sql.Tx) error {
 		var err error
 		decision, err = consumeInTx(ctx, tx, sha256.Sum256([]byte(secret)), call, time.Now)
 		return err
 	})
 	if err != nil {
-		return matcher.Decision{}, err
+		return Consumption{}, err
 	}
 
 	return decision, nil
@@ -45,15 +45,15 @@ func (s *Store) Consume(ctx context.Context, secret string, call matcher.Call) (
 // The transaction owns the write lock before this function runs. Keeping this
 // core separate also lets crash tests stop after the real update and audit write
 // but before commit, without production test hooks or timing-based sleeps.
-func consumeInTx(ctx context.Context, tx *sql.Tx, hash [sha256.Size]byte, call matcher.Call, clock func() time.Time) (matcher.Decision, error) {
+func consumeInTx(ctx context.Context, tx *sql.Tx, hash [sha256.Size]byte, call matcher.Call, clock func() time.Time) (Consumption, error) {
 	grant, agent, err := loadGrant(ctx, tx, hash)
 	if err != nil {
-		return matcher.Decision{}, err
+		return Consumption{}, err
 	}
 	now := clock().UTC()
 	decision, err := matcher.Match(grant, call, now)
 	if err != nil {
-		return matcher.Decision{}, err
+		return Consumption{}, err
 	}
 	if decision.Allowed {
 		// Recheck expiry against a fresh server time after matching, never a time
@@ -61,31 +61,32 @@ func consumeInTx(ctx context.Context, tx *sql.Tx, hash [sha256.Size]byte, call m
 		now = clock().UTC()
 		decision, err = matcher.Match(grant, call, now)
 		if err != nil {
-			return matcher.Decision{}, err
+			return Consumption{}, err
 		}
 		if decision.Allowed {
 			result, err := tx.ExecContext(ctx, `UPDATE grants
     SET uses_left=uses_left-1,last_used_at=?
     WHERE id=? AND uses_left>0 AND expires_at>? AND revoked_at IS NULL`, now.UnixMilli(), grant.ID, now.UnixMilli())
 			if err != nil {
-				return matcher.Decision{}, fmt.Errorf("consume grant use: %w", err)
+				return Consumption{}, fmt.Errorf("consume grant use: %w", err)
 			}
 			changed, err := result.RowsAffected()
 			if err != nil {
-				return matcher.Decision{}, err
+				return Consumption{}, err
 			}
 			if changed != 1 {
-				return matcher.Decision{}, fmt.Errorf("grant state changed unexpectedly inside consumption transaction")
+				return Consumption{}, fmt.Errorf("grant state changed unexpectedly inside consumption transaction")
 			}
 		}
 	}
 	if decision.Allowed {
 		decision.Reason = "Call fits this grant. One use was consumed before forwarding."
 	}
-	if err = recordDecision(ctx, tx, decision, call, agent, now); err != nil {
-		return matcher.Decision{}, err
+	id, err := insertDecision(ctx, tx, decision, call, agent, now)
+	if err != nil {
+		return Consumption{}, err
 	}
-	return decision, nil
+	return Consumption{Decision: decision, ReceiptID: id}, nil
 }
 
 func loadGrant(ctx context.Context, tx *sql.Tx, hash [sha256.Size]byte) (*matcher.Grant, string, error) {
@@ -150,9 +151,13 @@ func decodeStored(text string, out any) error {
 	return nil
 }
 func recordDecision(ctx context.Context, tx *sql.Tx, d matcher.Decision, call matcher.Call, agent string, now time.Time) error {
+	_, err := insertDecision(ctx, tx, d, call, agent, now)
+	return err
+}
+func insertDecision(ctx context.Context, tx *sql.Tx, d matcher.Decision, call matcher.Call, agent string, now time.Time) (int64, error) {
 	data, err := json.Marshal(call)
 	if err != nil {
-		return fmt.Errorf("digest call: %w", err)
+		return 0, fmt.Errorf("digest call: %w", err)
 	}
 	digest := sha256.Sum256(data)
 	var grantID any
@@ -167,10 +172,10 @@ func recordDecision(ctx context.Context, tx *sql.Tx, d matcher.Decision, call ma
 	if d.Allowed {
 		outcome = "allowed"
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO decisions (grant_id,at,agent,tool,args_digest,outcome,code,reason)
+	result, err := tx.ExecContext(ctx, `INSERT INTO decisions (grant_id,at,agent,tool,args_digest,outcome,code,reason)
   VALUES (?,?,?,?,?,?,?,?)`, grantID, now.UnixMilli(), agent, action, digest[:], outcome, string(d.Code), d.Reason)
 	if err != nil {
-		return fmt.Errorf("record authorization decision: %w", err)
+		return 0, fmt.Errorf("record authorization decision: %w", err)
 	}
-	return nil
+	return result.LastInsertId()
 }

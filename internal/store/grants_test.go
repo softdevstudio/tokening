@@ -281,7 +281,7 @@ func TestConcurrentRevokeAndConsume(t *testing.T) {
 		g := issue(t, a, issueRequest())
 		start := make(chan struct{})
 		var wg sync.WaitGroup
-		var d matcher.Decision
+		var d Consumption
 		var consumeErr, revokeErr error
 		wg.Add(2)
 		go func() {

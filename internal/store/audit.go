@@ -21,17 +21,18 @@ var ErrInvalidAuditQuery = errors.New("invalid audit query: cursor must be nonne
 // DecisionRecord selects only audit columns. It never joins credentials, bearer
 // hashes, binding plaintext or upstream response bodies into an export.
 type DecisionRecord struct {
-	ID             int64        `json:"id"`
-	GrantID        *string      `json:"grant_id"`
-	At             time.Time    `json:"at"`
-	Agent          string       `json:"agent"`
-	Action         string       `json:"action"`
-	ArgsDigest     string       `json:"args_digest"`
-	Outcome        string       `json:"outcome"`
-	Code           matcher.Code `json:"code"`
-	Reason         string       `json:"reason"`
-	UpstreamStatus *int         `json:"upstream_status"`
-	LatencyMS      *int64       `json:"latency_ms"`
+	AuthorizationID *int64       `json:"authorization_id"`
+	ID              int64        `json:"id"`
+	GrantID         *string      `json:"grant_id"`
+	At              time.Time    `json:"at"`
+	Agent           string       `json:"agent"`
+	Action          string       `json:"action"`
+	ArgsDigest      string       `json:"args_digest"`
+	Outcome         string       `json:"outcome"`
+	Code            matcher.Code `json:"code"`
+	Reason          string       `json:"reason"`
+	UpstreamStatus  *int         `json:"upstream_status"`
+	LatencyMS       *int64       `json:"latency_ms"`
 }
 type DecisionFilter struct {
 	// AfterID is an exclusive cursor. Zero starts at the first record.
@@ -122,7 +123,7 @@ func (s *Store) auditUpperID(ctx context.Context) (int64, error) {
 	return upper, nil
 }
 func (s *Store) readDecisions(ctx context.Context, filter DecisionFilter, through int64, limit int) ([]DecisionRecord, error) {
-	query := `SELECT id,grant_id,at,agent,tool,args_digest,outcome,code,reason,upstream_status,latency_ms
+	query := `SELECT id,grant_id,at,agent,tool,args_digest,outcome,code,reason,upstream_status,latency_ms,authorization_id
  FROM decisions WHERE id>? AND id<=?`
 	args := []any{filter.AfterID, through}
 	if filter.GrantID != "" {
@@ -140,10 +141,10 @@ func (s *Store) readDecisions(ctx context.Context, filter DecisionFilter, throug
 	for rows.Next() {
 		var r DecisionRecord
 		var grant sql.NullString
-		var status, latency sql.NullInt64
+		var status, latency, authorization sql.NullInt64
 		var at int64
 		var digest []byte
-		if err = rows.Scan(&r.ID, &grant, &at, &r.Agent, &r.Action, &digest, &r.Outcome, &r.Code, &r.Reason, &status, &latency); err != nil {
+		if err = rows.Scan(&r.ID, &grant, &at, &r.Agent, &r.Action, &digest, &r.Outcome, &r.Code, &r.Reason, &status, &latency, &authorization); err != nil {
 			return nil, fmt.Errorf("decode audit row: %w", err)
 		}
 		if len(digest) != 32 {
@@ -155,6 +156,10 @@ func (s *Store) readDecisions(ctx context.Context, filter DecisionFilter, throug
 		}
 		r.At = time.UnixMilli(at).UTC()
 		r.ArgsDigest = hex.EncodeToString(digest)
+		if authorization.Valid {
+			id := authorization.Int64
+			r.AuthorizationID = &id
+		}
 		if status.Valid {
 			n := int(status.Int64)
 			r.UpstreamStatus = &n

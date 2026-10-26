@@ -109,7 +109,7 @@ func TestConsumeSingleUseRace1000(t *testing.T) {
 				defer wg.Done()
 				<-start
 				d, err := s.Consume(context.Background(), fmt.Sprintf("test-secret-%d", run), consumerCall())
-				results <- d
+				results <- d.Decision
 				errs <- err
 			}(s)
 		}
@@ -275,7 +275,7 @@ func TestConsumeQueuedStateChange(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			type result struct {
-				d   matcher.Decision
+				d   Consumption
 				err error
 			}
 			started := make(chan struct{})

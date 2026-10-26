@@ -124,7 +124,7 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 	}
 	switch method {
 	case "initialize":
-		rpc(w, id, map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{"tools": map[string]any{}}, "serverInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 0, "")
+		rpc(w, id, map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{"tools": map[string]any{}}, "serverInfo": map[string]string{"name": "tokening", "version": "0.1.1"}}, 0, "")
 	case "ping":
 		rpc(w, id, map[string]any{}, 0, "")
 	case "tools/list":
@@ -323,7 +323,7 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		}
 		return fields["result"], res.StatusCode, nil
 	}
-	init, status, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 1)
+	init, status, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.1"}}, 1)
 	if err != nil {
 		return nil, status, err
 	}

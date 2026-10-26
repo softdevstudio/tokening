@@ -18,7 +18,13 @@ hex digest. Required bindings must exist. Optional bindings may be absent, but
 once bound they must be present in every call and match. Hash rules always need
 an issued hash binding, including when the template says `bind: optional`.
 Hash comparisons use decoded UTF-8 strings and constant-time digest comparison.
-The matcher does not include supplied argument values or hashes in its reasons.
+Reasons say what the grant allows and what the call did, for example "Grant is
+bound to id 2; call sent id 3." or "Grant allows wp_update_post; call asked for
+wp_delete_post." Bound and sent values appear only when both are JSON numbers or
+booleans of 32 characters or less. String values and hashes never appear in a
+reason, because reasons are stored in the audit log and a string can hold private
+text. Caller-supplied names, such as a tool or an extra argument, are cut to 64
+characters.
 
 JSON scalar types are preserved: the string `"2"` differs from the number `2`.
 JSON numbers compare exactly, so `1`, `1.0` and `1e0` are equivalent in JSON fields.

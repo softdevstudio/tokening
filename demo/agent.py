@@ -62,7 +62,7 @@ def isolation():
 def run(spec):
     isolation()
     main, parallel = spec["main"], spec["parallel"]
-    rpc(main, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "tokening-demo", "version": "0.1.0"}})
+    rpc(main, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "tokening-demo", "version": "0.1.1"}})
     rpc(main, "notifications/initialized", {}, None)
     listing = rpc(main, "tools/list", {})
     if [tool["name"] for tool in listing["tools"]] != ["wp_update_post"]:

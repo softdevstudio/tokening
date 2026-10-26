@@ -54,7 +54,7 @@
   }
   function finalCaption() {
     const wp = recorded.wordpress, untouched = (wp.before || []).filter(before => { const after = wp.posts.find(item => item.id === before.id); return after && after.title === before.title; }).map(item => item.id);
-    return 'End of the run. WordPress was checked afterwards: ' + plural(wp.writes, 'write') + ', ' + plural(wp.deletes, 'delete') + (untouched.length ? ', post ' + untouched.join(' and ') + ' untouched' : '') + '. Every refused call stopped at the gateway.';
+    return 'End of the run. WordPress was checked afterwards: ' + plural(wp.writes, 'write') + ', ' + plural(wp.deletes, 'delete') + (untouched.length ? ', ' + (untouched.length === 1 ? 'post ' : 'posts ') + untouched.join(' and ') + ' untouched' : '') + '. Every refused call stopped at the gateway.';
   }
 
   function render() {
@@ -133,7 +133,7 @@
     $('play').textContent = 'Pause'; playing = setInterval(() => showReplay(cursor + 1), 2600);
   }
   // An embedding page sizes its frame from this message; nothing else is sent.
-  function sendHeight() { if (embedded && window.parent !== window) window.parent.postMessage({tokeningReplayHeight: Math.ceil(document.documentElement.scrollHeight)}, '*'); }
+  function sendHeight() { if (embedded && window.parent !== window) window.parent.postMessage({tokeningReplayHeight: Math.ceil(document.querySelector('main').getBoundingClientRect().bottom + window.scrollY + 8)}, '*'); }
   function disconnect(message) { if (controller) controller.abort(); controller = null; clearTimeout(timer); liveToken = ''; $('token').value = ''; $('disconnect').disabled = true; $('notice').textContent = message || 'Disconnected. Displayed records are the last received snapshot.'; }
   async function request(path, signal) { const response = await fetch(path, {headers:{Authorization:'Bearer ' + liveToken}, cache:'no-store', credentials:'omit', redirect:'error', signal}); if (!response.ok) { const error = new Error(response.status === 401 ? 'The admin token was refused.' : 'The requested view is unavailable (HTTP ' + response.status + ').'); error.status = response.status; throw error; } return response.json(); }
   async function refresh(active) {

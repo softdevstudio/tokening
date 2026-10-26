@@ -21,3 +21,5 @@ The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLit
 The internal [audit API](docs/audit.md) now supports bounded decision queries and JSONL export with resumable cursors. The export releases its database connection before writing each page. Admin routes and CLI wiring remain in development.
 
 The internal [REST gateway](docs/gateway.md) now connects grants to HTTP forwarding, with credential injection and linked completion audit records. It also serves grant self-description. MCP, the running server and admin/CLI wiring remain in development.
+
+The internal MCP HTTP adapter now supports grant-filtered discovery and scoped tool calls, with separate upstream sessions and credentials. See [MCP gateway](docs/mcp.md) for the protocol profile and response limits. Server, admin and CLI integration are next.

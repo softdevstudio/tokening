@@ -62,7 +62,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 403, "origin_not_allowed", "This origin is not allowed.")
 		return
 	}
-	if r.URL.Path != "/grant" && !strings.HasPrefix(r.URL.Path, "/http/") {
+	if r.URL.Path != "/grant" && !strings.HasPrefix(r.URL.Path, "/http/") && !strings.HasPrefix(r.URL.Path, "/mcp/") {
 		http.NotFound(w, r)
 		return
 	}
@@ -74,6 +74,10 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/grant" {
 		g.describe(w, r, secret)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/mcp/") {
+		g.mcp(w, r, secret)
 		return
 	}
 	g.rest(w, r, secret)

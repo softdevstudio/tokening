@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. MCP and admin/server/CLI integration are next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. Admin/server/CLI integration is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -32,10 +32,10 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Audit log: one row per decision, JSONL export
 
 ### Gateway
-- [ ] Agent listener: MCP Streamable HTTP at `/mcp/{target}` (tools/list filtering, tools/call)
+- [x] Agent listener: MCP Streamable HTTP at `/mcp/{target}` (tools/list filtering, tools/call)
 - [x] REST passthrough at `/http/{target}/...`
 - [x] `GET /grant` self-description
-- [ ] Forwarder with credential injection (REST complete; MCP pending)
+- [x] Forwarder with credential injection (REST and MCP HTTP; stdio remains v0.2)
 - [ ] Admin listener and admin API; CLI as its client
 
 ### Demo
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added the internal MCP HTTP endpoint with local grant-filtered discovery, initialization, ping and tool calls. Normalized calls consume before private upstream initialization; each call gets its own credential-injected upstream session, bounded JSON/SSE response handling and best-effort session deletion. Refusals are readable MCP tool errors, with linked completion audit records and no refunds. Tests cover JSON/SSE, hidden credentials/session IDs, metadata without consumption, wrong tools and bindings, exhaustion, malformed messages and concurrent one-use calls. Documented the pinned protocol and buffered transport limits. Next: running server, admin API and CLI wiring. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Built the shared HTTP forwarding foundation first, since MCP tool calls depend on it. Added internal REST /http/{target}/... and GET /grant handlers with bearer authentication, origin admission, strict bounded JSON, request normalization and parameter-shadow/override checks. Forwarding starts only after consumption commits, strips incoming credentials, injects vault credentials, disables redirects/proxies/replays, streams response bodies and permits only documented response metadata headers. Added schema 3 and server-side receipts for append-only linked completion records, including upstream status/latency, without refunding uses. Tested real local HTTP forwarding, secret isolation, simultaneous one-use calls, redirects/5xx, terminal states, saved policy versions and revocation during a real in-flight request. A header-filter test exposed insufficient reliance on Connection metadata; changed to an explicit response-header allowlist. Local CGO-free format/vet/tests/build and gateway/store race detector tests passed, including the 1,000-run consumer test. MCP and admin/server/CLI wiring remain. Next: MCP Streamable HTTP adapter using this foundation. No release published.
 

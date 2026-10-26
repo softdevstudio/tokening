@@ -62,6 +62,9 @@ func setup(t *testing.T, upstream http.Handler, kind string, credential []byte) 
 func (f fixture) request(method, path, body string) *http.Request {
 	r := httptest.NewRequest(method, path, strings.NewReader(body))
 	r.Header.Set("Authorization", "Bearer "+string(f.grant.Secret))
+	if strings.HasPrefix(path, "/mcp/") {
+		r.Header.Set("Accept", "application/json, text/event-stream")
+	}
 	if body != "" {
 		r.Header.Set("Content-Type", "application/json")
 	}

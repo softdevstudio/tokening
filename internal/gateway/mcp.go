@@ -104,13 +104,15 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 		writeError(w, 500, "storage_error", "Could not read this grant.")
 		return
 	}
-	if grant == nil {
-		writeError(w, 401, string(matcher.GrantUnknown), "No grant matches this token.")
-		return
-	}
-	if grant.TargetKind != "mcp_http" || grant.Template.Target != target {
-		writeError(w, 403, "tool_not_allowed", "This grant does not allow this MCP target.")
-		return
+	if method != "tools/call" {
+		if grant == nil {
+			writeError(w, 401, string(matcher.GrantUnknown), "No grant matches this token.")
+			return
+		}
+		if grant.TargetKind != "mcp_http" || grant.Template.Target != target {
+			writeError(w, 403, "tool_not_allowed", "This grant does not allow this MCP target.")
+			return
+		}
 	}
 	if id == nil {
 		if method == "notifications/initialized" {

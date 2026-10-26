@@ -126,6 +126,25 @@ func TestMCPScopedCall(t *testing.T) {
 			if writes.Load() != 1 {
 				t.Fatal("invalid message forwarded")
 			}
+			unknown := f.request("POST", "/mcp/wp", body)
+			unknown.Header.Set("Authorization", "Bearer unknown")
+			response := f.serve(unknown)
+			if !strings.Contains(response.Body.String(), "grant_unknown") {
+				t.Fatal(response.Body.String())
+			}
+			records, err := s.ListDecisions(ctx, store.DecisionFilter{}, 100)
+			if err != nil {
+				t.Fatal(err)
+			}
+			unknownRecorded := false
+			for _, record := range records {
+				if record.Code == "grant_unknown" {
+					unknownRecorded = true
+				}
+			}
+			if !unknownRecorded {
+				t.Fatal("unknown call was not audited")
+			}
 			fresh, err := s.IssueGrant(ctx, store.IssueRequest{Template: "edit", Uses: 1, TTL: time.Minute, Args: map[string]json.RawMessage{"id": json.RawMessage(`2`)}, IssuedTo: "bot", IssuedBy: "owner", Reason: "parallel"})
 			if err != nil {
 				t.Fatal(err)

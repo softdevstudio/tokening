@@ -107,7 +107,8 @@ jobs:
           } 2>&1 | tee test/results/local/panel/check.log; then
             echo "::error::Panel browser checks failed. Read the panel diagnostics artifact."
             # Repeat the last lines as annotations so the cause is readable without the artifact.
-            tail -n 25 test/results/local/panel/check.log | grep -v '^\s*$' | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error title=panel check::${line}"; done
+            # One annotation: GitHub keeps only the first few per step.
+            echo "::error title=panel check log::$(grep -v '^go: downloading\|^\s*$' test/results/local/panel/check.log | tail -n 30 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
             exit 1
           fi
       - name: Preserve browser diagnostics and screenshots

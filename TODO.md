@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Independent review fixes and automated release packaging are implemented. The release workflow requires fresh green CI and all native archive checks before publication. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Independent review fixes and automated release packaging are implemented. The release workflow requires fresh green CI and all native archive checks before publication. v0.1.0 is published at https://github.com/softdevstudio/tokening/releases/tag/v0.1.0. All five native targets passed tests and extracted-archive smoke checks. Public latest downloads, SHA256 checks and the downloaded Linux binary were verified. Next: the planned Hugo website (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -49,7 +49,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Failure tests recorded to `test/results/` by script
 - [x] Independent review, fixes, fresh recording
 - [x] README as manual and explainer (credential custody on the first screen)
-- [ ] Ship v0.1.0
+- [x] Ship v0.1.0
 
 ### Site (tokening.net)
 - [ ] Set up from the standard Hugo Launch template (content and config only)
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Shipped v0.1.0 automatically after green CI 40365569712 and release run 40365943119. Independent review approved digest c4349fe14aeaab9631c855a8995f3693056328ebfb6dbf5c8ab6fe53a4dddc6f. All five native Go 1.27.3 builds passed full tests, 1,000 single-use races, crash recovery and extracted-archive smoke checks, including Intel macOS after the WAL fix. Release tag points to fb5b425f00c4f1301e119945c15003d58362114f and contains all ten expected assets. Downloaded SHA256SUMS, test-results.json and the Linux amd64 archive through releases/latest/download; verified hashes and ran the extracted binary through version, help, policy validation, key generation, server, grant issue/inspect/refuse/revoke and audit export. Docker evidence records two writes, no deletes and one parallel winner; browser replay made zero network requests. No release blockers remain. Next: standard Hugo Launch website content/config and the planned project listing.
 
 - **2026-10-26, ChatGPT.** Pulled main and read the project instructions and plan. Correction CI passed; native Linux amd64/arm64, macOS arm64 and Windows amd64 release checks passed. Intel macOS exposed concurrent database initialization returning SQLITE_BUSY while enabling WAL. Added bounded, cancellation-aware retries for SQLite lock contention and a real read-lock regression covering recovery and cancellation. Focused tests passed 30 repetitions; full CGO-free Go tests, vet and seven release-script tests passed. Independent review found no source blocker. Fresh CI and all native release checks remain required before publication.
 

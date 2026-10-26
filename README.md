@@ -17,3 +17,5 @@ The internal SQLite store now supports WAL mode and atomic schema migrations. Th
 The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The [atomic consumer](docs/consumer.md) now reserves uses with its authorization audit record. The listeners and forwarder are still in development.
 
 The [credential vault](docs/vault.md) now encrypts upstream credentials in SQLite using NaCl secretbox. It loads its key from an environment variable or a private file. The [internal grant API](docs/grants.md) now handles issuing, inspection and revocation. The server APIs and CLI grant commands are still to come.
+
+The internal [audit API](docs/audit.md) now supports bounded decision queries and JSONL export with resumable cursors. The export releases its database connection before writing each page. Admin routes and CLI wiring remain in development.

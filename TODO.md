@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Audit export is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. Gateway integration is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -29,7 +29,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
 - [x] Vault: encrypt/decrypt credentials, key from env or file
 - [x] Grant issue / inspect / revoke, secret shown once, stored hashed
-- [ ] Audit log: one row per decision, JSONL export
+- [x] Audit log: one row per decision, JSONL export
 
 ### Gateway
 - [ ] Agent listener: MCP Streamable HTTP at `/mcp/{target}` (tools/list filtering, tools/call)
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added the internal audit query and JSONL export API. Export uses a fixed upper record ID and bounded pages, releases its SQLite connection before writing, and reports complete-record cursors for resumption. Added optional grant filtering, bounded list queries, UTC timestamps and preservation of nullable upstream metadata, without selecting credentials, bearer hashes or argument plaintext. Tests cover multi-page completeness/order, filters, resume, cancellation, writer errors and short writes, empty/invalid queries, metadata and secret absence. A callback writer creates a decision through the same store to prove exports do not hold its connection and new records stay outside the fixed boundary. Documented partial-output handling and remaining upstream-result integration. Local CGO-free format/vet/tests/build and the storage race detector passed, including the existing 1,000-run single-use test. Next: gateway/admin listeners, forwarding and CLI wiring. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added internal policy application and grant issue/inspect/revoke methods. Issuance narrows active template limits, validates scalar bindings, hashes hash-bound strings before storage and returns a random bearer secret only after commit; SQLite retains only its hash. Inspection exposes no bearer hash or secret and bounds decision history to 100 rows. Revocation is idempotent and serializes with consumption. Schema 2 tracks active templates separately from immutable history, so removal stops issuance and reload cannot redirect old grants by changing a target ID. Refactored the tested commit-error connection cleanup into a shared transaction helper. Updated migration fixtures for the new schema and added a schema-1 upgrade test, reload/issuance rollback, hidden-secret checks, saved-version/removal tests, REST coverage and concurrent revoke/consume tests. Local CGO-free format/vet/tests/build and store/matcher race detector tests passed. Updated references. Next: audit export, then gateway/admin listeners and CLI wiring. No release published.
 

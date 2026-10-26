@@ -44,7 +44,7 @@ separate operational checks.
 
 `InspectGrant(ctx, id)` returns scope, saved template version, bindings, allowance
 and expiry, with issuer/revocation metadata. It returns the total decision count
-and up to the latest 100 decisions, newest first. It does not select the bearer
+and up to the latest 100 decisions, newest first. Use [audit export](audit.md) for the full decision history. It does not select the bearer
 hash, plaintext bearer secret or upstream credential. State is `issued` before
 first use, `active` after a use when some remain, or `exhausted`. Revocation takes
 precedence over expiry, and expiry over exhaustion in the displayed state.

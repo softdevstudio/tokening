@@ -8,8 +8,8 @@ Repo set up with instructions only. No code yet. Next phase: **v0.1, the demo wo
 
 ## Open questions for the owner
 
-- [ ] Aim v0.1 at Web Summit (Lisbon, November 9 to 12, 2026), or let it ship when it's ready?
-- [ ] Should the public demo also run against one of his real WordPress sites, or stay Docker-only?
+- [x] Web Summit: no. v0.1 ships when its gate passes, no deadline (owner, 2026-10-26)
+- [x] Public demo stays Docker-only, never against a real site (owner, 2026-10-26)
 - [x] Site repo exists: https://github.com/photozeitgeist/tokening.net (confirmed by the owner 2026-10-26)
 
 ## v0.1 tasks

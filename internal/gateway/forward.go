@@ -183,3 +183,8 @@ func copyResponseHeaders(out, in http.Header) {
 		}
 	}
 }
+
+// ValidateCredential checks the upload format without sending a request.
+func ValidateCredential(kind string, plain []byte) error {
+	return inject(&http.Request{Header: make(http.Header)}, kind, plain)
+}

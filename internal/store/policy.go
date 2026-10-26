@@ -129,3 +129,38 @@ func sortedKeys[V any](m map[string]V) []string {
 	sort.Strings(out)
 	return out
 }
+
+// ListTemplates reads the active versions from the same committed policy used
+// for issuance, including after a reload. Historical grants keep their versions.
+func (s *Store) ListTemplates(ctx context.Context) (map[string]policy.Template, error) {
+	out := map[string]policy.Template{}
+	err := s.writeTx(ctx, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx, `SELECT id FROM active_templates ORDER BY id`)
+		if err != nil {
+			return err
+		}
+		names := []string{}
+		for rows.Next() {
+			var name string
+			if err = rows.Scan(&name); err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		for _, name := range names {
+			saved, err := loadActiveTemplate(ctx, tx, name)
+			if err != nil {
+				return err
+			}
+			out[name] = saved.template
+		}
+		return nil
+	})
+	return out, err
+}

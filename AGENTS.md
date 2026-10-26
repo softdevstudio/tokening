@@ -11,7 +11,7 @@ A permission gateway for AI agents. It sits between an agent and an API and issu
 - Language: Go. One binary, `tokening`. State in SQLite.
 - Licence: Apache 2.0.
 - Code repo: `github.com/softdevstudio/tokening` (this repo). Go module path: `github.com/softdevstudio/tokening`.
-- Site: tokening.net, repo `github.com/photozeitgeist/tokening.net` (created by the owner; ask if it's missing).
+- Site: tokening.net, repo `github.com/photozeitgeist/tokening.net`.
 - Full plan: `docs/plan.md`.
 
 ## The owner's role, and yours

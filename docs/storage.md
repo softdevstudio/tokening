@@ -33,7 +33,7 @@ version; reload and issuance are separate work still to come.
 Grant secrets have a unique, 32-byte hash column, with no plaintext secret column.
 Counters cannot be negative or exceed the initial allowance. Times are UTC Unix
 milliseconds. Credentials have an opaque ciphertext column; encryption is the
-vault's responsibility and is not implemented in this stage.
+[vault's responsibility](vault.md). The store now encrypts credential writes and authenticates reads through that vault.
 
 Audit decisions are append-only through SQL triggers. An unknown-token refusal
 can have a null grant ID. Arguments are represented by a SHA-256 digest, and

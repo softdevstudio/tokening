@@ -1,11 +1,14 @@
 # Third-party licenses
 
 Tokening uses `modernc.org/sqlite` for SQLite without CGO. This keeps one-binary
-builds portable and avoids a separate database service. The other modules below
-are its runtime dependencies. Versions are pinned in `go.mod` and `go.sum`.
+builds portable and avoids a separate database service. `golang.org/x/crypto`
+provides NaCl secretbox for authenticated credential encryption, as specified in
+the project plan. The other modules below are runtime dependencies. Versions are
+pinned in `go.mod` and `go.sum`.
 
 | Module | Version | License family | Full notice text |
 | --- | --- | --- | --- |
+| golang.org/x/crypto | v0.40.0 | BSD-3-Clause | [Notices](third_party/golang.org_x_crypto.txt) |
 | modernc.org/sqlite | v1.38.2 | BSD-3-Clause; SQLite public domain | [Notices](third_party/modernc.org_sqlite.txt) |
 | github.com/dustin/go-humanize | v1.0.1 | MIT | [Notices](third_party/github.com_dustin_go-humanize.txt) |
 | github.com/google/uuid | v1.6.0 | BSD-style | [Notices](third_party/github.com_google_uuid.txt) |

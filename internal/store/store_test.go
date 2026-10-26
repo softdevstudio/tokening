@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func mustExec(t *testing.T, s *Store, query string, args ...any) {
@@ -227,5 +229,64 @@ func TestInvalidPathsAndCancellation(t *testing.T) {
 			s.Close()
 			t.Fatal("database symlink accepted")
 		}
+	}
+}
+
+func TestEnableWALRetriesReadLock(t *testing.T) {
+	for _, cancelEarly := range []bool{false, true} {
+		t.Run(strconv.FormatBool(cancelEarly), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "locked.db")
+			blocker, err := sql.Open("sqlite", path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer blocker.Close()
+			if _, err = blocker.Exec("CREATE TABLE held (id INTEGER)"); err != nil {
+				t.Fatal(err)
+			}
+			tx, err := blocker.Begin()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback()
+			var count int
+			if err = tx.QueryRow("SELECT count(*) FROM held").Scan(&count); err != nil {
+				t.Fatal(err)
+			}
+			candidate, err := sql.Open("sqlite", path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer candidate.Close()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			done := make(chan error, 1)
+			var mode string
+			go func() { done <- enableWAL(ctx, candidate, &mode) }()
+			select {
+			case err := <-done:
+				t.Fatalf("returned while read lock held: %v", err)
+			case <-time.After(50 * time.Millisecond):
+			}
+			if cancelEarly {
+				cancel()
+			} else {
+				if err = tx.Rollback(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			select {
+			case err := <-done:
+				if cancelEarly {
+					if !errors.Is(err, context.Canceled) {
+						t.Fatalf("cancellation: %v", err)
+					}
+				} else if err != nil || mode != "wal" {
+					t.Fatalf("mode=%s error=%v", mode, err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("WAL retry did not finish")
+			}
+		})
 	}
 }

@@ -5,13 +5,15 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
 )
 
 //go:embed migrations/001_initial.sql
@@ -85,7 +87,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return fail(fmt.Errorf("open SQLite: %w", err))
 	}
 	var mode string
-	if err = db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&mode); err != nil {
+	if err = enableWAL(ctx, db, &mode); err != nil {
 		return fail(fmt.Errorf("enable WAL: %w", err))
 	}
 	if mode != "wal" {
@@ -95,6 +97,28 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return fail(err)
 	}
 	return &Store{db: db}, nil
+}
+
+// Changing journal mode can return SQLITE_BUSY immediately despite busy_timeout
+// when another opener holds a read lock. Retry only lock contention, within the
+// same five-second budget used for other SQLite operations.
+func enableWAL(ctx context.Context, db *sql.DB, mode *string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	for {
+		err := db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(mode)
+		var sqliteErr *sqlite.Error
+		if !errors.As(err, &sqliteErr) || (sqliteErr.Code()&255 != 5 && sqliteErr.Code()&255 != 6) {
+			return err
+		}
+		timer := time.NewTimer(10 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
 }
 
 func (s *Store) Close() error { return s.db.Close() }

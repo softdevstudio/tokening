@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Repo set up with instructions only. No code yet. Next phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Gateway and policy implementation are next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -17,10 +17,10 @@ Repo set up with instructions only. No code yet. Next phase: **v0.1, the demo wo
 Work top to bottom unless a task is blocked. Tick when done and pushed.
 
 ### Foundation
-- [ ] `go.mod` (`github.com/softdevstudio/tokening`), `cmd/tokening/main.go`, `version` constant `0.1.0`
-- [ ] `NOTICE` and `THIRD_PARTY_LICENSES.md` (LICENSE is in place)
-- [ ] `.gitignore`, `Makefile` or `justfile` with `test`, `build`, `demo`
-- [ ] CI workflow: `go vet`, `gofmt` check, `go test ./...` on Linux and macOS, every push to main
+- [x] `go.mod` (`github.com/softdevstudio/tokening`), `cmd/tokening/main.go`, `version` constant `0.1.0`
+- [x] `NOTICE` and `THIRD_PARTY_LICENSES.md` (LICENSE is in place)
+- [x] `.gitignore`, `Makefile` or `justfile` with `test`, `build`, `demo`
+- [x] CI workflow: `go vet`, `gofmt` check, `go test ./...` on Linux and macOS, every push to main
 
 ### Core
 - [ ] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
@@ -61,5 +61,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md in order. Added the Go module and version/help command, notices, ignore rules, build/test/demo targets and Linux/macOS CI with retained diagnostics. No release published. Local Go validation is blocked because this environment has no Go toolchain; CI is the validation route. Next: policy loader and validator. The demo target explicitly fails until the Docker demo exists.
 
 - **2026-10-26, Claude.** Created the repo's instruction set: `AGENTS.md` (shared rules for Claude and ChatGPT/Codex), `CLAUDE.md` (pointer), `docs/plan.md` (approved plan), this `TODO.md`, `README.md` stub, Apache 2.0 `LICENSE`. No code yet. Next: Foundation tasks above.

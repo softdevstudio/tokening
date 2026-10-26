@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Check and build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test/results/local
+          if ! { make test && make build && ./bin/tokening version; } 2>&1 | tee test/results/local/check.log; then
+            echo "::error::Checks failed. Read the check log artifact for the full command output."
+            exit 1
+          fi
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-log-${{ matrix.os }}
+          path: test/results/local/check.log

@@ -224,6 +224,7 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		return nil, 0, errors.New("unavailable target")
 	}
 	session := ""
+	upstreamVersion := "2025-11-25"
 	defer func() {
 		if session == "" {
 			return
@@ -235,7 +236,7 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 			return
 		}
 		req.Header.Set("Mcp-Session-Id", session)
-		req.Header.Set("MCP-Protocol-Version", mcpVersion)
+		req.Header.Set("MCP-Protocol-Version", upstreamVersion)
 		plain, err := g.store.Credential(cleanup, target, g.vault)
 		if err != nil {
 			return
@@ -262,7 +263,7 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json, text/event-stream")
-		req.Header.Set("MCP-Protocol-Version", mcpVersion)
+		req.Header.Set("MCP-Protocol-Version", upstreamVersion)
 		if session != "" {
 			req.Header.Set("Mcp-Session-Id", session)
 		}
@@ -318,16 +319,17 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		}
 		return fields["result"], res.StatusCode, nil
 	}
-	init, _, err := send("initialize", map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 1)
+	init, _, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.0"}}, 1)
 	if err != nil {
 		return nil, 0, err
 	}
 	var initialized struct {
 		ProtocolVersion string `json:"protocolVersion"`
 	}
-	if json.Unmarshal(init, &initialized) != nil || initialized.ProtocolVersion != mcpVersion {
+	if json.Unmarshal(init, &initialized) != nil || (initialized.ProtocolVersion != mcpVersion && initialized.ProtocolVersion != "2025-11-25") {
 		return nil, 0, errors.New("unsupported upstream protocol")
 	}
+	upstreamVersion = initialized.ProtocolVersion
 	if _, _, err = send("notifications/initialized", map[string]any{}, 0); err != nil {
 		return nil, 0, err
 	}

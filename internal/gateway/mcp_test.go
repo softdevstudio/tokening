@@ -20,12 +20,19 @@ import (
 )
 
 func TestMCPScopedCall(t *testing.T) {
-	for _, sse := range []bool{false, true} {
-		t.Run(fmt.Sprint(sse), func(t *testing.T) {
+	for _, profile := range []struct {
+		sse     bool
+		version string
+	}{{false, mcpVersion}, {true, mcpVersion}, {false, "2025-11-25"}, {true, "2025-11-25"}} {
+		t.Run(fmt.Sprint(profile), func(t *testing.T) {
+			sse := profile.sse
 			var writes atomic.Int32
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("Authorization") != "Bearer upstream-private" || r.Header.Get("Cookie") != "" {
 					t.Error("credential boundary")
+				}
+				if r.Header.Get("MCP-Protocol-Version") != "2025-11-25" && r.Header.Get("MCP-Protocol-Version") != profile.version {
+					t.Error("unsupported wire version")
 				}
 				if r.Method == "DELETE" {
 					w.WriteHeader(204)
@@ -40,6 +47,9 @@ func TestMCPScopedCall(t *testing.T) {
 				if json.Unmarshal(data, &request) != nil {
 					t.Error("invalid request")
 				}
+				if request.Method != "initialize" && r.Header.Get("MCP-Protocol-Version") != profile.version {
+					t.Error("negotiated version not used")
+				}
 				if request.Method != "initialize" && r.Header.Get("Mcp-Session-Id") != "private-session" {
 					t.Error("missing private session")
 				}
@@ -47,7 +57,7 @@ func TestMCPScopedCall(t *testing.T) {
 				switch request.Method {
 				case "initialize":
 					w.Header().Set("Mcp-Session-Id", "private-session")
-					result = map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{}, "serverInfo": map[string]string{"name": "test", "version": "1"}}
+					result = map[string]any{"protocolVersion": profile.version, "capabilities": map[string]any{}, "serverInfo": map[string]string{"name": "test", "version": "1"}}
 				case "notifications/initialized":
 					w.WriteHeader(202)
 					return

@@ -11,3 +11,5 @@ Status: early development. The command scaffold supports `tokening version` and 
 Licence: Apache 2.0.
 
 Policy files are checked locally without contacting targets or opening the credential vault. See [the policy reference](docs/policy.md) for supported fields and warnings.
+
+The internal SQLite store now supports WAL mode and atomic schema migrations. Grant handling and the gateway are still in development. See [storage](docs/storage.md) for persistence and backup details.

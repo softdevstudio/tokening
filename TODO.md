@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The matcher is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -24,7 +24,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 
 ### Core
 - [x] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
-- [ ] SQLite store (pure-Go driver), schema migrations, WAL mode
+- [x] SQLite store (pure-Go driver), schema migrations, WAL mode
 - [ ] Matcher: pure function, every constraint and refusal code, table-driven tests
 - [ ] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
 - [ ] Vault: encrypt/decrypt credentials, key from env or file
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added the pure-Go SQLite store, WAL with FULL synchronization, per-connection foreign keys and busy timeout, atomic versioned migrations and private database file permissions. Added the target/template/grant/decision schema, immutable template versions and append-only audit triggers. Tests cover reopening, constraints, failed-migration rollback, future-schema refusal and concurrent initialization. Local CGO-free format/vet/tests/build passed, as did the storage race test and repeated concurrent-open test. Pinned SQLite and its runtime dependencies, included license notices and documented storage. CI now tests with CGO disabled on Linux and macOS. Next: matcher. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Implemented policy loading and `tokening check`, the planned constraint vocabulary, target and template validation, deterministic warnings, WordPress example and policy reference. Added malformed-policy and CLI tests, JSONL test recording and CI artifact retention. Installed a scratch Go toolchain; local format, vet, tests, build and example check passed. Confirmed the foundation CI passed on Linux and macOS. Next: SQLite store and migrations. No release published.
 

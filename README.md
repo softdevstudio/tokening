@@ -14,4 +14,4 @@ Policy files are checked locally without contacting targets or opening the crede
 
 The internal SQLite store now supports WAL mode and atomic schema migrations. Grant handling and the gateway are still in development. See [storage](docs/storage.md) for persistence and backup details.
 
-The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The atomic consumer and listeners are still in development.
+The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The [atomic consumer](docs/consumer.md) now reserves uses with its authorization audit record. The listeners and forwarder are still in development.

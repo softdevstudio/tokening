@@ -9,4 +9,4 @@ if [ -n "$unformatted" ]; then
   exit 1
 fi
 go vet ./...
-go test -json ./... | tee test/results/local/tests.jsonl
+go test -count=1 -json ./... | tee test/results/local/tests.jsonl

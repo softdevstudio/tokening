@@ -44,5 +44,4 @@ this is not a tamper-evident audit system.
 Tests cover persistence, connection settings after pool replacement, foreign-key
 and counter checks, immutable template versions and append-only decisions.
 Migration tests inject a failure after a schema write and check rollback, reject
-newer versions, and race independent database initializers. The planned single-use
-consumer and process-kill failure tests are still separate tasks.
+newer versions, and race independent database initializers. The [consumer](consumer.md) now has the parallel single-use test and process-kill recovery tests.

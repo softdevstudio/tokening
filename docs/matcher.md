@@ -51,5 +51,4 @@ The `upstream_error` helper describes a call that was authorized and forwarded
 but then failed. Its authorization flag remains true; its code records the
 failure, and the use remains spent. It cannot refund or retry the operation.
 
-The matcher is not connected to a listener yet. The next step is the atomic
-SQLite consumer, including the parallel single-use test.
+The matcher is not connected to a listener yet. The [atomic SQLite consumer](consumer.md) now handles use reservation and its parallel single-use test.

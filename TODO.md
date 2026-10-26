@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic use consumption is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -26,7 +26,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
 - [x] SQLite store (pure-Go driver), schema migrations, WAL mode
 - [x] Matcher: pure function, every constraint and refusal code, table-driven tests
-- [ ] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
+- [x] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
 - [ ] Vault: encrypt/decrypt credentials, key from env or file
 - [ ] Grant issue / inspect / revoke, secret shown once, stored hashed
 - [ ] Audit log: one row per decision, JSONL export
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Implemented bearer-hash lookup, saved-template matching and atomic use consumption with authorization audit records in one immediate transaction. Added a 1,000-run race through independent database connections with exactly one winner per run, real process-kill recovery before and after commit, audit/commit failure rollback, expiry rechecks, queued state changes, saved-version tests and REST snapshot coverage. An injected COMMIT failure showed SQLite could leave an open transaction; fixed this by discarding the reserved connection on commit errors, with a regression test proving rollback and subsequent usability. Local CGO-free format/vet/tests/build and the storage race detector passed. Disabled cached test results in the JSONL recording script. Updated consumer documentation, including the forwarding boundary and remaining gateway integration tests. Next: credential vault, then grant/admin APIs and audit export. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Implemented the pure matcher for grant lifecycle, MCP target/tool scope, scalar constraints, exact bindings, SHA-256 bindings and REST path/query scope. Added deterministic readable decisions and the upstream-failure decision helper, with tests for every planned code. Refactored policy validation for saved template snapshots and replaced floating-point numeric bounds with bounded exact JSON numbers, because rounding could incorrectly admit a value above its limit. Tested Unicode limits and malformed strings, large-number boundaries, hash corruption, path traversal/alias attempts, refusal ordering and input immutability. Local CGO-free format/vet/tests/build passed; recorded tests through the existing JSONL script. Updated the matcher and policy references. Next: atomic SQLite consumer and the 1,000-run single-use race test. No release published.
 

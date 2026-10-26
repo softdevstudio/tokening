@@ -13,3 +13,5 @@ Licence: Apache 2.0.
 Policy files are checked locally without contacting targets or opening the credential vault. See [the policy reference](docs/policy.md) for supported fields and warnings.
 
 The internal SQLite store now supports WAL mode and atomic schema migrations. Grant handling and the gateway are still in development. See [storage](docs/storage.md) for persistence and backup details.
+
+The internal [permission matcher](docs/matcher.md) checks grant snapshots without I/O or consumption. The atomic consumer and listeners are still in development.

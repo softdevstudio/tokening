@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The matcher is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic use consumption is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -25,7 +25,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ### Core
 - [x] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
 - [x] SQLite store (pure-Go driver), schema migrations, WAL mode
-- [ ] Matcher: pure function, every constraint and refusal code, table-driven tests
+- [x] Matcher: pure function, every constraint and refusal code, table-driven tests
 - [ ] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
 - [ ] Vault: encrypt/decrypt credentials, key from env or file
 - [ ] Grant issue / inspect / revoke, secret shown once, stored hashed
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Implemented the pure matcher for grant lifecycle, MCP target/tool scope, scalar constraints, exact bindings, SHA-256 bindings and REST path/query scope. Added deterministic readable decisions and the upstream-failure decision helper, with tests for every planned code. Refactored policy validation for saved template snapshots and replaced floating-point numeric bounds with bounded exact JSON numbers, because rounding could incorrectly admit a value above its limit. Tested Unicode limits and malformed strings, large-number boundaries, hash corruption, path traversal/alias attempts, refusal ordering and input immutability. Local CGO-free format/vet/tests/build passed; recorded tests through the existing JSONL script. Updated the matcher and policy references. Next: atomic SQLite consumer and the 1,000-run single-use race test. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added the pure-Go SQLite store, WAL with FULL synchronization, per-connection foreign keys and busy timeout, atomic versioned migrations and private database file permissions. Added the target/template/grant/decision schema, immutable template versions and append-only audit triggers. Tests cover reopening, constraints, failed-migration rollback, future-schema refusal and concurrent initialization. Local CGO-free format/vet/tests/build passed, as did the storage race test and repeated concurrent-open test. Pinned SQLite and its runtime dependencies, included license notices and documented storage. CI now tests with CGO disabled on Linux and macOS. Next: matcher. No release published.
 

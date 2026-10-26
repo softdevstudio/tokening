@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/url"
 	"os"
 	"regexp"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/softdevstudio/tokening/internal/number"
 )
 
 const MaxFileBytes = 1 << 20
@@ -48,8 +51,8 @@ type Constraint struct {
 	Enum     []json.RawMessage `json:"enum,omitempty"`
 	MaxLen   *int              `json:"max_len,omitempty"`
 	MaxBytes *int              `json:"max_bytes,omitempty"`
-	Min      *float64          `json:"min,omitempty"`
-	Max      *float64          `json:"max,omitempty"`
+	Min      *number.Number    `json:"min,omitempty"`
+	Max      *number.Number    `json:"max,omitempty"`
 	Pattern  string            `json:"pattern,omitempty"`
 	SHA256   bool              `json:"sha256,omitempty"`
 }
@@ -187,62 +190,22 @@ func (p Policy) Validate() ([]string, error) {
 		if !ok {
 			return fail("unknown target")
 		}
-		ttl, err := time.ParseDuration(t.MaxTTL)
-		if err != nil || ttl <= 0 || ttl%time.Second != 0 {
-			return fail("max_ttl must be a positive whole-second duration")
+		w, err := t.Validate(target.Kind)
+		if err != nil {
+			return fail(err.Error())
 		}
-		if t.MaxUses <= 0 {
-			return fail("max_uses must be positive")
+		for _, warning := range w {
+			warnings = append(warnings, "template "+name+": "+warning)
 		}
-		if t.AdditionalArgs != "" && t.AdditionalArgs != "refuse" && t.AdditionalArgs != "allow" {
-			return fail("additional_args must be refuse or allow")
-		}
-		if t.AdditionalArgs == "allow" {
-			warnings = append(warnings, "template "+name+": additional_args allows unchecked fields")
-		}
-		if target.Kind == "http" {
-			if t.Tool != "" || !validMethod(t.Method) || !strings.HasPrefix(t.Path, "/") || strings.ContainsAny(t.Path, "?#\\") || strings.HasPrefix(t.Path, "//") {
-				return fail("REST templates need method and absolute path, without tool, query or fragment")
-			}
-			stripped := placeholderPattern.ReplaceAllString(t.Path, "")
-			if strings.ContainsAny(stripped, "{}%") {
-				return fail("invalid path placeholder or encoded path")
-			}
-			for _, segment := range strings.Split(t.Path, "/") {
-				if segment == "." || segment == ".." {
-					return fail("path cannot contain dot segments")
-				}
-			}
-			for _, m := range placeholderPattern.FindAllStringSubmatch(t.Path, -1) {
-				if t.Args[m[1]].Bind != "required" {
-					return fail("path placeholders must have bind: required in args")
-				}
-			}
-		} else if t.Tool == "" || t.Method != "" || t.Path != "" || len(t.Query) > 0 {
-			return fail("MCP templates need tool and cannot set method, path or query")
-		}
-		for _, group := range []struct {
-			name  string
-			rules map[string]Constraint
-		}{{"args", t.Args}, {"query", t.Query}} {
-			for _, arg := range keys(group.rules) {
-				if strings.TrimSpace(arg) == "" {
-					return fail("empty argument name")
-				}
-				c := group.rules[arg]
-				if err := c.validate(); err != nil {
-					return fail(group.name + "." + arg + ": " + err.Error())
-				}
-				if c.Type == "string" && c.Bind != "required" && c.MaxLen == nil && c.MaxBytes == nil && len(c.Enum) == 0 && !c.SHA256 {
-					warnings = append(warnings, "template "+name+" "+group.name+"."+arg+": string has no size limit")
-				}
-			}
-		}
+
 	}
 	return warnings, nil
 }
 
-func (c Constraint) validate() error {
+func (c Constraint) validate() error { return c.Validate() }
+
+// Validate checks a scalar constraint.
+func (c Constraint) Validate() error {
 	bad := func(s string) error { return fmt.Errorf("%s", s) }
 	if c.Bind != "" && c.Bind != "required" && c.Bind != "optional" {
 		return bad("bind must be required or optional")
@@ -259,7 +222,22 @@ func (c Constraint) validate() error {
 	if (c.Min != nil || c.Max != nil) && c.Type != "number" && c.Type != "integer" {
 		return bad("numeric bounds need number or integer type")
 	}
-	if c.Min != nil && c.Max != nil && *c.Min > *c.Max {
+	var min, max *big.Rat
+	if c.Min != nil {
+		var err error
+		min, err = number.Parse(string(*c.Min))
+		if err != nil {
+			return err
+		}
+	}
+	if c.Max != nil {
+		var err error
+		max, err = number.Parse(string(*c.Max))
+		if err != nil {
+			return err
+		}
+	}
+	if min != nil && max != nil && min.Cmp(max) > 0 {
 		return bad("min exceeds max")
 	}
 	if c.Pattern != "" {
@@ -294,10 +272,12 @@ func (c Constraint) validate() error {
 				if !ok {
 					return bad("enum value does not match type")
 				}
-				if c.Type == "integer" {
-					if _, err := n.Int64(); err != nil {
-						return bad("integer enum must contain integers")
-					}
+				value, err := number.Parse(string(n))
+				if err != nil {
+					return err
+				}
+				if c.Type == "integer" && !value.IsInt() {
+					return bad("integer enum must contain integers")
 				}
 			}
 		}
@@ -318,4 +298,68 @@ func keys[V any](m map[string]V) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// Validate checks a template snapshot against its target transport kind.
+func (t Template) Validate(targetKind string) ([]string, error) {
+	var warnings []string
+	fail := func(s string) ([]string, error) { return nil, fmt.Errorf("%s", s) }
+	if targetKind != "http" && targetKind != "mcp_http" && targetKind != "mcp_stdio" {
+		return fail("unknown target kind")
+	}
+	if t.Target == "" {
+		return fail("missing target")
+	}
+	ttl, err := time.ParseDuration(t.MaxTTL)
+	if err != nil || ttl <= 0 || ttl%time.Second != 0 {
+		return fail("max_ttl must be a positive whole-second duration")
+	}
+	if t.MaxUses <= 0 {
+		return fail("max_uses must be positive")
+	}
+	if t.AdditionalArgs != "" && t.AdditionalArgs != "refuse" && t.AdditionalArgs != "allow" {
+		return fail("additional_args must be refuse or allow")
+	}
+	if t.AdditionalArgs == "allow" {
+		warnings = append(warnings, "additional_args allows unchecked fields")
+	}
+	if targetKind == "http" {
+		if t.Tool != "" || !validMethod(t.Method) || !strings.HasPrefix(t.Path, "/") || strings.ContainsAny(t.Path, "?#\\") || strings.HasPrefix(t.Path, "//") {
+			return fail("REST templates need method and absolute path, without tool, query or fragment")
+		}
+		stripped := placeholderPattern.ReplaceAllString(t.Path, "")
+		if strings.ContainsAny(stripped, "{}%") {
+			return fail("invalid path placeholder or encoded path")
+		}
+		for _, segment := range strings.Split(t.Path, "/") {
+			if segment == "." || segment == ".." {
+				return fail("path cannot contain dot segments")
+			}
+		}
+		for _, m := range placeholderPattern.FindAllStringSubmatch(t.Path, -1) {
+			if t.Args[m[1]].Bind != "required" {
+				return fail("path placeholders must have bind: required in args")
+			}
+		}
+	} else if t.Tool == "" || t.Method != "" || t.Path != "" || len(t.Query) > 0 {
+		return fail("MCP templates need tool and cannot set method, path or query")
+	}
+	for _, group := range []struct {
+		name  string
+		rules map[string]Constraint
+	}{{"args", t.Args}, {"query", t.Query}} {
+		for _, arg := range keys(group.rules) {
+			if strings.TrimSpace(arg) == "" {
+				return fail("empty argument name")
+			}
+			c := group.rules[arg]
+			if err := c.validate(); err != nil {
+				return fail(group.name + "." + arg + ": " + err.Error())
+			}
+			if c.Type == "string" && c.Bind != "required" && c.MaxLen == nil && c.MaxBytes == nil && len(c.Enum) == 0 && !c.SHA256 {
+				warnings = append(warnings, group.name+"."+arg+": string has no size limit")
+			}
+		}
+	}
+	return warnings, nil
 }

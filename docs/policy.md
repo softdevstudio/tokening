@@ -34,10 +34,9 @@ this version's vocabulary.
 
 String rules can set `max_len` (Unicode code points), `max_bytes` (UTF-8 bytes),
 and `pattern` (RE2 syntax, matched against the whole string). Limits may be zero.
-Numeric rules can set `min` and `max`. `enum` must be a nonempty array matching a
-string or numeric type. `sha256: true` on a bound string says that the issuer will
-store and match a hash of the bound value. Hash computation and enforcement are
-part of grant issuing and the matcher, not the policy checker.
+Numeric rules can set exact `min` and `max` bounds. Number tokens are limited to 256 characters and exponents from -1024 to 1024. `enum` must be a nonempty array matching a
+string or numeric type. `sha256: true` on a string always needs an issue-time hash binding, even with `bind: optional`. The issuer will
+store and match a hash of the bound value. Hash computation belongs to grant issuing; enforcement belongs to the matcher. The policy checker validates their rule shape.
 
 Unlisted fields are refused by default. `additional_args: allow` explicitly
 permits them and produces a warning. A string with no length limit, fixed required

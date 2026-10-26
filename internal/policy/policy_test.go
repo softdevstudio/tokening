@@ -148,3 +148,14 @@ func TestExample(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestExactBounds(t *testing.T) {
+	input := strings.Replace(validPolicy, `"type":"string","max_len":200`, `"type":"number","min":9007199254740993,"max":9007199254740992`, 1)
+	if _, _, err := Decode(strings.NewReader(input)); err == nil {
+		t.Fatal("rounded min/max inversion was accepted")
+	}
+	input = strings.Replace(validPolicy, `"type":"string","max_len":200`, `"type":"number","max":"100"`, 1)
+	if _, _, err := Decode(strings.NewReader(input)); err == nil {
+		t.Fatal("quoted numeric bound was accepted")
+	}
+}

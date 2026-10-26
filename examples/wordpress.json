@@ -1,0 +1,23 @@
+{
+  "targets": {
+    "demo-wp": {
+      "kind": "mcp_http",
+      "url": "http://localhost:8080/wp-json/mcp/v1",
+      "credential": { "type": "basic", "ref": "vault:demo-wp" }
+    }
+  },
+  "templates": {
+    "wp.edit-post-text": {
+      "target": "demo-wp",
+      "tool": "wp_update_post",
+      "args": {
+        "id": { "bind": "required" },
+        "title": { "type": "string", "max_len": 200 },
+        "content": { "type": "string", "max_bytes": 32768 }
+      },
+      "additional_args": "refuse",
+      "max_uses": 3,
+      "max_ttl": "30m"
+    }
+  }
+}

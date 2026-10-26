@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Gateway and policy implementation are next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -23,7 +23,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] CI workflow: `go vet`, `gofmt` check, `go test ./...` on Linux and macOS, every push to main
 
 ### Core
-- [ ] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
+- [x] Policy file loader and validator (`tokening check`), constraint vocabulary from the plan
 - [ ] SQLite store (pure-Go driver), schema migrations, WAL mode
 - [ ] Matcher: pure function, every constraint and refusal code, table-driven tests
 - [ ] Consumer: atomic check-and-decrement, race test (1,000 runs, one winner)
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Implemented policy loading and `tokening check`, the planned constraint vocabulary, target and template validation, deterministic warnings, WordPress example and policy reference. Added malformed-policy and CLI tests, JSONL test recording and CI artifact retention. Installed a scratch Go toolchain; local format, vet, tests, build and example check passed. Confirmed the foundation CI passed on Linux and macOS. Next: SQLite store and migrations. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md in order. Added the Go module and version/help command, notices, ignore rules, build/test/demo targets and Linux/macOS CI with retained diagnostics. No release published. Local Go validation is blocked because this environment has no Go toolchain; CI is the validation route. Next: policy loader and validator. The demo target explicitly fails until the Docker demo exists.
 

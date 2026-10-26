@@ -106,6 +106,8 @@ jobs:
             CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/tokening-browser/node_modules" node scripts/panel-browser-test.cjs
           } 2>&1 | tee test/results/local/panel/check.log; then
             echo "::error::Panel browser checks failed. Read the panel diagnostics artifact."
+            # Repeat the last lines as annotations so the cause is readable without the artifact.
+            tail -n 25 test/results/local/panel/check.log | grep -v '^\s*$' | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error title=panel check::${line}"; done
             exit 1
           fi
       - name: Preserve browser diagnostics and screenshots

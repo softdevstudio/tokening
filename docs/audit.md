@@ -35,8 +35,9 @@ records below the captured boundary remain stable across page reads.
 
 The result reports the number of fully written records, the last fully written
 ID and the captured upper ID. After a successful export, resume with
-`AfterID = ThroughID`, keeping the same grant filter. This also advances past
-nonmatching records in a filtered export. On an error, do not advance to the
+the greater of `LastID` and `ThroughID` as `AfterID`, keeping the same grant
+filter. This advances past nonmatching records in a filtered export and keeps
+a cursor ahead of the current log from moving backwards. On an error, do not advance to the
 upper ID. The writer may have received a partial final line. Discard that
 incomplete line before resuming after `LastID`, or discard and recreate the
 partial export. Short writes without an error are detected as failures.

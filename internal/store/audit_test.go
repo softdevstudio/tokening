@@ -143,6 +143,11 @@ func TestAuditPagingFiltersAndResume(t *testing.T) {
 		}
 	}
 	out.Reset()
+	future, err := s.ExportDecisions(context.Background(), &out, DecisionFilter{AfterID: 2000})
+	if err != nil || future.Rows != 0 || future.LastID != 2000 || future.ThroughID != 1005 || out.Len() != 0 {
+		t.Fatal("future cursor was not preserved")
+	}
+	out.Reset()
 	result, err = s.ExportDecisions(context.Background(), &out, DecisionFilter{AfterID: 1000, GrantID: "g_0"})
 	if err != nil {
 		t.Fatal(err)

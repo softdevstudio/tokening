@@ -8,3 +8,6 @@
 tokening.json
 
 __pycache__/
+
+/dist/
+/evidence/

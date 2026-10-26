@@ -9,8 +9,8 @@ authorization record.
 
 The internal store now provides `ListDecisions(ctx, filter, limit)` and
 `ExportDecisions(ctx, writer, filter)`. They are for the trusted admin side. The
-admin HTTP routes, CLI export command and SSE transport are still to come.
-The list method provides the bounded polling primitive that SSE will use.
+admin HTTP routes, CLI export command and SSE transport use these methods.
+The list method provides bounded pages for polling and the authenticated SSE stream.
 
 A filter has an exclusive `AfterID` cursor and an optional `GrantID`. Zero starts
 at the beginning; negative cursors are errors. Lists are ordered by ascending

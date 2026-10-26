@@ -1,8 +1,8 @@
 # Issuing and managing grants
 
 The store now has internal Go methods for applying a policy, issuing a grant,
-inspecting it and revoking it. The CLI grant commands and admin HTTP listener are
-still to come. These methods must be used only by the trusted admin side.
+inspecting it and revoking it. The CLI grant commands use the separate admin
+HTTP listener. These methods are only for the trusted admin side.
 
 `ApplyPolicy(ctx, policy)` validates and snapshots the supplied policy, then
 updates its active template set in one transaction. An unchanged template keeps

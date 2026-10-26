@@ -1,6 +1,12 @@
 name: CI
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ""
   push:
     branches: [main]
   pull_request:
@@ -21,9 +27,11 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: .go-version
           cache: false
       - name: Check and build
         shell: bash
@@ -47,6 +55,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - name: Run the disposable WordPress demo
         shell: bash
         run: |
@@ -72,9 +82,11 @@ jobs:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: .go-version
           cache: false
       - uses: actions/setup-node@v4
         with:

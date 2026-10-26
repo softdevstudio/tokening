@@ -8,5 +8,6 @@ if [ -n "$unformatted" ]; then
   echo "$unformatted"
   exit 1
 fi
+python3 -m unittest discover -s scripts -p '*_test.py'
 go vet ./...
 go test -count=1 -json ./... | tee test/results/local/tests.jsonl

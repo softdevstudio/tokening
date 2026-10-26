@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Release preparation is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Independent review fixes and automated release packaging are implemented. The release workflow requires fresh green CI and all native archive checks before publication. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -45,10 +45,10 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo runs in CI
 
 ### Release
-- [ ] Release workflow (triggered by green CI on a new version, builds Linux/macOS/Windows, smoke tests, tags, publishes with SHA256SUMS; versionless archive names)
-- [ ] Failure tests recorded to `test/results/` by script
-- [ ] Independent review, fixes, fresh recording
-- [ ] README as manual and explainer (credential custody on the first screen)
+- [x] Release workflow (triggered by green CI on a new version, builds Linux/macOS/Windows, smoke tests, tags, publishes with SHA256SUMS; versionless archive names)
+- [x] Failure tests recorded to `test/results/` by script
+- [x] Independent review, fixes, fresh recording
+- [x] README as manual and explainer (credential custody on the first screen)
 - [ ] Ship v0.1.0
 
 ### Site (tokening.net)
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Ran the required independent review with a separate agent. Closed unknown-token MCP HTTP status, lost upstream initialization status and CR/BOM SSE parsing findings with regression tests; no authorization bypass or credential-custody defect was found. Added reviewed-source digest gating, current supported Go 1.27.3 build pin, native Linux/macOS amd64/arm64 and Windows amd64 tests, deterministic archives and extracted-binary CLI/server/grant smoke checks. Added automated publication through GITHUB_TOKEN after green CI and all native jobs, manual full-CI rebuild support, partial-release recovery, tag-SHA checks and protection against moving latest backwards. Release evidence is measured from real test logs and the Docker/browser artifacts. Cleaned stale manuals, added packaging tests, release notes and the independent review record. Local checks and extracted-archive smoke passed. Native CI/release execution is the remaining gate before calling v0.1.0 shipped. Site work stays last.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added a read-only admin console with memory-only bearer handling, grant counters/deadline, bounded live decision polling and optional verified WordPress snapshots. The public shell contains no private data; every data request still needs admin authentication. Added a typed schema-1 replay projection, counter/completion validation, HTML-safe JSON and a self-contained exporter with hashed script/style policy and network connections disabled. Added tokening replay, output overwrite protection and Docker export of replay.html plus its private snapshot. Tests cover malformed/incoherent records, credential-field omission, script-closing text and authenticated snapshot access. Local CGO-free format/vet/full tests/build and targeted tests passed. Local Chrome cannot create its required socket in the sandbox; added a separate CI browser job consuming the real Docker replay, checking desktop/mobile layout, offline requests, safe text, token storage and live updates, with screenshots/diagnostics kept. Next: release gate, independent review and fresh recordings before any release workflow publishes. No release published.
 

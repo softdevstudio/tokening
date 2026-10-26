@@ -73,7 +73,7 @@ func usage(out io.Writer) {
 	fmt.Fprintln(out, "Tokening: narrow permissions for AI agents.")
 	fmt.Fprintln(out, "Usage: tokening <command>")
 	fmt.Fprintln(out, "Commands: serve, check <policy.json>, target, template, grant, log, replay, doctor, keygen, version, help")
-	fmt.Fprintln(out, "Development build. Run tokening serve --help for listener options.")
+	fmt.Fprintln(out, "Run tokening serve --help for listener options.")
 }
 
 func main() {

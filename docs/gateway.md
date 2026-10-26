@@ -1,9 +1,9 @@
 # Agent HTTP gateway
 
 The internal `gateway.New(store, vault, options)` handler now serves REST requests
-at `/http/{target}/...` and self-description at `GET /grant`. A running server,
-MCP handler and admin/CLI wiring are still to come. The production listener will
-bind to localhost by default and keep admin routes on a separate port.
+at `/http/{target}/...` and self-description at `GET /grant`. The running server
+also serves the MCP handler and operator API. Both listeners bind to localhost
+by default, with admin routes kept on a separate port. See [running Tokening](server.md).
 
 Requests present exactly one `Authorization: Bearer <grant-secret>` header.
 Query tokens, cookies and duplicate authorization headers are not accepted as

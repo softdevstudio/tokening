@@ -50,4 +50,4 @@ failures, check expiry after matching, and check queued revocation and expiry.
 The JSONL test script records the race counts in `test/results/local/tests.jsonl`
 and CI preserves that file as an artifact. Cached test results are disabled.
 
-The REST handler and forwarder now have integration tests for saved policy versions and a real in-flight upstream request. MCP and running listeners remain to come.
+The REST handler and forwarder now have integration tests for saved policy versions and a real in-flight upstream request. MCP and running listeners are wired, with integration tests and the Docker demonstration.

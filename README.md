@@ -6,11 +6,11 @@ Tokening sits between an agent and an API and issues grants for single actions: 
 
 The real upstream credential must stay in Tokening, outside the agent environment. The admin listener must also be unreachable by agents. A grant cannot prevent bypass if the agent already has the real credential.
 
-This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. A read-only admin panel and offline visual replay are implemented. Release checks are still pending. The approved scope is in [the plan](docs/plan.md).
+Tokening v0.1 runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. A read-only admin panel and offline visual replay are implemented. Release binaries and recorded results are produced by the [release workflow](docs/releases.md). The approved scope is in [the plan](docs/plan.md).
 
 ## Build and run
 
-Build with Go 1.23 or newer:
+Download a versionless archive from the GitHub releases page and verify it against SHA256SUMS, or build from source with Go 1.23 or newer. Release builds use the supported toolchain pinned in .go-version:
 
 ```sh
 make test

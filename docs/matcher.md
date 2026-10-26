@@ -42,7 +42,7 @@ must retain the exact spelling of the binding; a path bound to `2` does not allo
 A body field that repeats a path argument must agree with it. Query constraints
 use a separate namespace, so a body field cannot satisfy a required query binding.
 
-A future transport adapter must reject duplicate argument keys and repeated
+The transport adapters reject duplicate argument keys and repeated
 query values before constructing a call. It must preserve scalar types and pass
 the same normalized request to the matcher and forwarder. Raw JSON decoding,
 upstream discovery and bearer-secret lookup are outside this package.

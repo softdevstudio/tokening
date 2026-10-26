@@ -6,7 +6,7 @@ Tokening sits between an agent and an API and issues grants for single actions: 
 
 The real upstream credential must stay in Tokening, outside the agent environment. The admin listener must also be unreachable by agents. A grant cannot prevent bypass if the agent already has the real credential.
 
-This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. Its visual panel and the release checks are still pending. The approved scope is in [the plan](docs/plan.md).
+This is a development build, not a release. It runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. A read-only admin panel and offline visual replay are implemented. Release checks are still pending. The approved scope is in [the plan](docs/plan.md).
 
 ## Build and run
 
@@ -56,6 +56,10 @@ tokening log --export > decisions.jsonl
 The agent sends its grant in Authorization: Bearer to POST /mcp/{target}, /http/{target}/... or GET /grant. MCP tools/list is derived from the saved grant. Tool calls and REST calls consume a use in the same SQLite transaction as the authorization record, before forwarding. Upstream failures still spend the use. Neither the server nor the CLI retries writes automatically.
 
 Run tokening doctor in the agent environment to look for common credential variable names. It reports names only, cannot find every credential source and cannot inspect another process.
+
+## Read-only console
+
+Open http://127.0.0.1:8081/admin/panel on the operator machine and enter the admin token and a grant ID. The panel shows grant state, expiry and recent decisions. The token stays in page memory. Export a verified demo JSON artifact with tokening replay --input replay.json --output replay.html for an offline visual replay.
 
 ## Docker demonstration
 

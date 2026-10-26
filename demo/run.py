@@ -65,6 +65,12 @@ def main():
         for grant in issued:
             if grant["secret"] in serialized or grant["secret"] in audit_text:
                 raise RuntimeError("A grant secret reached a replay artifact")
+        # Publish only the secret-free verified snapshot, then render the shared UI offline.
+        execute(["exec", "-T", "tokening", "sh", "-ec", "umask 077; cat > /state/demo-replay.tmp; mv /state/demo-replay.tmp /state/demo-replay.json"], serialized, timeout=30)
+        html = execute(["exec", "-T", "tokening", "tokening", "replay", "--input", "/state/demo-replay.json"], timeout=30)
+        if any(grant["secret"] in html for grant in issued):
+            raise RuntimeError("A grant secret reached the HTML replay")
+        (RESULTS / "replay.html").write_text(html)
         (RESULTS / "replay.json").write_text(serialized + "\n")
         (RESULTS / "decisions.jsonl").write_text(audit_text)
         print("Docker WordPress demo passed: discovery, one edit, three refusals, one parallel winner, and isolated agent networking.")

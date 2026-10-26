@@ -56,7 +56,7 @@ services:
     build:
       context: ..
       dockerfile: demo/Dockerfile
-    command: [sh, -ec, 'export TOKENING_ADMIN_TOKEN="$$(cat /secrets/admin.token)"; exec tokening serve --policy /demo/policy.json --db /state/tokening.db --key-file /secrets/vault.key --agent 0.0.0.0:8080 --admin 127.0.0.1:8081']
+    command: [sh, -ec, 'export TOKENING_ADMIN_TOKEN="$$(cat /secrets/admin.token)"; exec tokening serve --policy /demo/policy.json --db /state/tokening.db --key-file /secrets/vault.key --agent 0.0.0.0:8080 --admin 127.0.0.1:8081 --demo-replay /state/demo-replay.json']
     networks: [agents, backplane]
     volumes: [state:/state, secrets:/secrets:ro, ./policy.json:/demo/policy.json:ro]
     depends_on:

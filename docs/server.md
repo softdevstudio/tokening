@@ -58,4 +58,14 @@ POST /admin/targets accepts name and credential. GET /admin/templates returns th
 
 GET /admin/decisions accepts since (exclusive nonnegative ID), grant (optional ID filter) and follow=true (optional SSE). GET /admin/decisions.jsonl accepts since and grant and reports a successful complete snapshot with the Tokening-Export-Complete: true HTTP trailer. Check this marker when calling the API directly. A stream that closes early is incomplete even if its initial status was 200.
 
-Explain, the demo panel and the Docker WordPress demonstration are still pending. Stdio upstreams belong to the later MCP integration phase. This development build has not been released.
+Explain remains a later-phase command. The Docker WordPress demo and read-only panel are implemented. Stdio upstreams belong to the later MCP integration phase. This development build has not been released.
+
+# Read-only panel and replay
+
+Open http://127.0.0.1:8081/admin/panel on the operator machine. The HTML, CSS and JavaScript shell is public on the admin listener, but contains no grant or credential data. Enter the admin token and a grant ID to inspect that grant and poll its decisions. The page shows uses left, the expiry countdown and up to 200 recent records, including linked upstream outcomes. It cannot issue or revoke grants. The API still checks the admin bearer on every request.
+
+The application keeps the token in page memory, clears the input after connecting and drops its reference on disconnect or page exit. It does not put the token in URLs, cookies, localStorage or sessionStorage. Browser extensions, saved passwords and a compromised operator browser remain outside that promise. Keep the admin listener outside the agent's network.
+
+An optional --demo-replay /private/path/replay.json serves a verified schema-1 demo snapshot at authenticated GET /admin/demo. The panel shows its final WordPress post when the selected grant belongs to that snapshot. This is an operator-verified final snapshot, not a continuous upstream read. The server reads only this configured path; requests cannot choose a file. Missing or invalid snapshots return 503 without file contents. Unknown source fields are omitted by a typed projection.
+
+Create a portable replay with tokening replay --input replay.json --output replay.html. The output file must be new. Use --input - or --output - for stdin or stdout. The exporter checks grant counters and completion links, keeps only its documented display fields, escapes JSON for HTML and embeds all CSS and JavaScript. The file works offline, has no credentials or external assets, and blocks network connections with a content security policy. Its controls advance through actual audit records; the verified final post stays fixed and is labelled as such. The countdown uses recorded event time, so reopening an old replay does not change its historical meaning.

@@ -62,3 +62,43 @@ jobs:
         with:
           name: docker-wordpress-demo
           path: test/results/local/demo/
+
+  panel:
+    name: Panel browser checks
+    needs: demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-wordpress-demo
+          path: test/results/local/demo/
+      - name: Check the replay and live panel in Chrome
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test/results/local/panel
+          if ! {
+            npm install --prefix "$RUNNER_TEMP/tokening-browser" --no-audit --no-fund playwright@1.58.2
+            go build -o bin/tokening ./cmd/tokening
+            CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/tokening-browser/node_modules" node scripts/panel-browser-test.cjs
+          } 2>&1 | tee test/results/local/panel/check.log; then
+            echo "::error::Panel browser checks failed. Read the panel diagnostics artifact."
+            exit 1
+          fi
+      - name: Preserve browser diagnostics and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: panel-browser-checks
+          path: test/results/local/panel/

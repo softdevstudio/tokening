@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The visual admin panel is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Release preparation is next. Current phase: **v0.1, the demo works** (see `docs/plan.md`).
 
 ## Open questions for the owner
 
@@ -41,7 +41,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ### Demo
 - [x] `demo/docker-compose.yml`: WordPress, MCP adapter plugin, seeded posts, Tokening
 - [x] Scripted agent (deterministic) running the seven-step script
-- [ ] Decision log panel on the admin port; static replay export
+- [x] Decision log panel on the admin port; static replay export
 - [x] Demo runs in CI
 
 ### Release
@@ -61,6 +61,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added a read-only admin console with memory-only bearer handling, grant counters/deadline, bounded live decision polling and optional verified WordPress snapshots. The public shell contains no private data; every data request still needs admin authentication. Added a typed schema-1 replay projection, counter/completion validation, HTML-safe JSON and a self-contained exporter with hashed script/style policy and network connections disabled. Added tokening replay, output overwrite protection and Docker export of replay.html plus its private snapshot. Tests cover malformed/incoherent records, credential-field omission, script-closing text and authenticated snapshot access. Local CGO-free format/vet/full tests/build and targeted tests passed. Local Chrome cannot create its required socket in the sandbox; added a separate CI browser job consuming the real Docker replay, checking desktop/mobile layout, offline requests, safe text, token storage and live updates, with screenshots/diagnostics kept. Next: release gate, independent review and fresh recordings before any release workflow publishes. No release published.
 
 - **2026-10-26, ChatGPT.** Pulled main and read AGENTS.md, TODO.md and docs/plan.md. Added a disposable Compose stack with WordPress 6.9.4, the checksum-pinned official MCP Adapter 0.7.1, seeded posts and generated private application/vault/admin credentials. Added broad WordPress abilities and a deterministic grant-only agent on a separate internal network, including connection checks against the admin port, WordPress and database. The operator verifies real stored posts, two writes/no deletes, four refusals, linked completion records and exhausted grants, exports secret-checked JSON/JSONL replay artifacts and removes only its randomly named project's volumes. Added the Docker CI job with preserved diagnostics. Extended upstream MCP negotiation to 2025-11-25 while retaining the agent profile, with JSON/SSE version-header tests. Local CGO-free format/vet/tests/build, Python syntax and Compose structure checks passed. Docker is unavailable in the assistant environment; the new CI job verifies the real stack. Next: visual admin panel and standalone HTML replay, then the release gate and independent review. No release published.
 

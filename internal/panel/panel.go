@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -107,7 +108,13 @@ func clip(s string, n int) string {
 // dropped rather than rendered.
 func shortScalars(in map[string]any) map[string]any {
 	out := map[string]any{}
-	for key, value := range in {
+	names := make([]string, 0, len(in))
+	for key := range in {
+		names = append(names, key)
+	}
+	sort.Strings(names) // stable output when arguments are dropped
+	for _, key := range names {
+		value := in[key]
 		if len(out) == maxStepArgs || len(key) > 32 {
 			continue
 		}

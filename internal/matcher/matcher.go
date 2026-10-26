@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -103,6 +104,9 @@ func Match(g *Grant, c Call, now time.Time) (Decision, error) {
 	}
 	if g.TargetKind == "http" {
 		if c.Tool != "" || c.Method != g.Template.Method || !safePath(c.Path) {
+			if c.Method == "" {
+				return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call was not a REST request.", g.Template.Method, g.Template.Path))
+			}
 			return refuse(ToolNotAllowed, fmt.Sprintf("Grant allows %s %s; call used %s on another path.", g.Template.Method, g.Template.Path, quoteShort(c.Method)))
 		}
 		pathArgs, ok := extractPath(g.Template.Path, c.Path)
@@ -220,6 +224,9 @@ func checkGroup(label string, rules map[string]policy.Constraint, bindings map[s
 		rule, ok := rules[name]
 		if !ok {
 			if !allowAdditional {
+				if len(rules) == 0 {
+					return ArgNotAllowed, fmt.Sprintf("Grant does not allow any %s; call sent %s %s.", label, label, quoteShort(name))
+				}
 				return ArgNotAllowed, fmt.Sprintf("Grant does not allow %s %s. Allowed: %s.", label, quoteShort(name), strings.Join(keys(rules), ", "))
 			}
 			if !json.Valid(values[name]) || !utf8.Valid(values[name]) {
@@ -379,21 +386,20 @@ func UpstreamFailure(grant string, status int) Decision {
 }
 
 // quoteShort renders caller-supplied text for a reason, trimmed so a hostile
-// call cannot flood the audit log through the reason field.
+// call cannot flood the audit log through the reason field. Plain identifiers
+// stay bare; anything else is quoted with control and bidi characters escaped.
 func quoteShort(s string) string {
 	const max = 64
-	if utf8.RuneCountInString(s) > max {
-		r := []rune(s)
+	if r := []rune(s); len(r) > max {
 		s = string(r[:max]) + "…"
 	}
-	if s == "" {
-		return `""`
+	if s != "" && plainName.MatchString(s) {
+		return s
 	}
-	if strings.ContainsAny(s, " \t\n\"") {
-		return fmt.Sprintf("%q", s)
-	}
-	return s
+	return strconv.QuoteToGraphic(s)
 }
+
+var plainName = regexp.MustCompile(`\A[A-Za-z0-9_./:{}-]+…?\z`)
 
 // mismatchReason names both values only when both are JSON numbers or
 // booleans, such as a post ID. Strings are never repeated: a bound or sent

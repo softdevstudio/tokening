@@ -50,7 +50,9 @@ const {chromium} = require('playwright');
     await page.getByRole('button',{name:'Show final state'}).click();
     assert.equal(await page.locator('.decision').count(), source.audit.length);
     await page.setViewportSize({width:390,height:844});
-    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    // On failure, name the elements that stick out so the cause is in the log.
+    const wide = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > innerWidth + 0.5).slice(0, 6).map(e => e.tagName + '#' + e.id + '.' + e.className + ' right=' + Math.round(e.getBoundingClientRect().right) + ' ' + (e.textContent || '').slice(0, 50)));
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Replay wider than 390px: ' + wide.join(' | '));
     await page.screenshot({path:path.join(results, 'replay-mobile.png'),fullPage:true});
     await page.goto(pathToFileURL(hostile).href);
     assert.equal(await page.locator('#injected, #injected-before, #injected-arg').count(),0);

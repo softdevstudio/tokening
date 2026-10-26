@@ -98,6 +98,7 @@ func TestConsumeSingleUseRace1000(t *testing.T) {
 	seedConsumer(t, first, 1000)
 	second := openTest(t, path)
 	stores := []*Store{first, second}
+	completedRuns := 0
 	for run := 0; run < 1000; run++ {
 		start := make(chan struct{})
 		results := make(chan matcher.Decision, 2)
@@ -135,6 +136,7 @@ func TestConsumeSingleUseRace1000(t *testing.T) {
 		if winners != 1 || losers != 1 {
 			t.Fatalf("run %d: winners=%d losers=%d", run, winners, losers)
 		}
+		completedRuns++
 	}
 	var left, winners, losers int
 	if err := first.db.QueryRow(`SELECT sum(uses_left) FROM grants`).Scan(&left); err != nil {
@@ -149,7 +151,7 @@ func TestConsumeSingleUseRace1000(t *testing.T) {
 	if left != 0 || winners != 1000 || losers != 1000 {
 		t.Fatalf("left=%d winners=%d losers=%d", left, winners, losers)
 	}
-	t.Log(`{"consumer_race":{"runs":1000,"callers_per_run":2,"allowed":1000,"exhausted":1000,"remaining_uses":0}}`)
+	t.Logf(`{"consumer_race":{"runs":%d,"callers_per_run":%d,"allowed":%d,"exhausted":%d,"remaining_uses":%d}}`, completedRuns, len(stores), winners, losers, left)
 }
 func TestConsumeAuditFailureRollsBack(t *testing.T) {
 	s := openTest(t, filepath.Join(t.TempDir(), "db"))

@@ -139,7 +139,7 @@ func TestMCPScopedCall(t *testing.T) {
 			unknown := f.request("POST", "/mcp/wp", body)
 			unknown.Header.Set("Authorization", "Bearer unknown")
 			response := f.serve(unknown)
-			if !strings.Contains(response.Body.String(), "grant_unknown") {
+			if response.Code != 401 || response.Header().Get("WWW-Authenticate") == "" || !strings.Contains(response.Body.String(), "grant_unknown") {
 				t.Fatal(response.Body.String())
 			}
 			records, err := s.ListDecisions(ctx, store.DecisionFilter{}, 100)
@@ -186,5 +186,55 @@ func TestSSEResponseRejectsMissingAndDuplicate(t *testing.T) {
 		if err == nil && json.Valid(out) {
 			t.Fatal("accepted ambiguous response")
 		}
+	}
+}
+
+func TestSSELineEndingsAndBOM(t *testing.T) {
+	for _, ending := range []string{"\n", "\r\n", "\r"} {
+		for _, bom := range []string{"", "\xef\xbb\xbf"} {
+			body := bom + "event: message" + ending + `data: {"jsonrpc":"2.0","id":2,"result":{"content":[]}}` + ending + ending
+			got, err := sseResponse([]byte(body), 2)
+			if err != nil || !json.Valid(got) {
+				t.Fatalf("ending=%q bom=%q: %s %v", ending, bom, got, err)
+			}
+		}
+	}
+}
+func TestMCPInitializationFailureKeepsHTTPStatus(t *testing.T) {
+	for _, stage := range []string{"initialize", "notifications/initialized"} {
+		t.Run(stage, func(t *testing.T) {
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var request struct {
+					ID     int    `json:"id"`
+					Method string `json:"method"`
+				}
+				_ = json.NewDecoder(r.Body).Decode(&request)
+				if request.Method == stage {
+					w.WriteHeader(500)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": request.ID, "result": map[string]any{"protocolVersion": mcpVersion}})
+			}))
+			defer backend.Close()
+			s, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close()
+			p := policy.Policy{Targets: map[string]policy.Target{"wp": {Kind: "mcp_http", URL: backend.URL, Credential: policy.Credential{Type: "bearer", Ref: "vault:wp"}}}, Templates: map[string]policy.Template{"edit": {Target: "wp", Tool: "edit", MaxUses: 1, MaxTTL: "15m"}}}
+			if err = s.ApplyPolicy(context.Background(), p); err != nil {
+				t.Fatal(err)
+			}
+			v, _ := vault.New(make([]byte, 32))
+			if err = s.SetCredential(context.Background(), "wp", v, []byte(`{"value":"upstream"}`)); err != nil {
+				t.Fatal(err)
+			}
+			g, _ := New(s, v, Options{})
+			_, status, err := g.mcpCall(context.Background(), "wp", "edit", nil)
+			if err == nil || status != 500 {
+				t.Fatal(status, err)
+			}
+		})
 	}
 }

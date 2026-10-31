@@ -45,7 +45,17 @@ class ReleaseGuardTests(unittest.TestCase):
             race = {'consumer_race':{'runs':1000,'allowed':1000,'exhausted':1000,'callers_per_run':2,'remaining_uses':0}}
             records.append({'Output':'    test.go:1: '+json.dumps(race)+'\n'})
             log.write_text('\n'.join(json.dumps(record) for record in records))
+            with self.assertRaises(RuntimeError):
+                release.test_summary(log)
+            recorder = {'flight_recorder':{'tamper_cases':208,'tamper_caught':208,'crash_kills':20,'crash_verified':20,'thread_entries':800,'process_entries':400}}
+            for broken in (dict(recorder['flight_recorder'],tamper_caught=207), dict(recorder['flight_recorder'],crash_verified=19)):
+                log.write_text('\n'.join(json.dumps(record) for record in records+[{'Output':json.dumps({'flight_recorder':broken})+'\n'}]))
+                with self.assertRaises(RuntimeError):
+                    release.test_summary(log)
+            records.insert(0,{'Output':json.dumps(recorder)+'\n'})
+            log.write_text('\n'.join(json.dumps(record) for record in records))
             self.assertEqual(release.test_summary(log)['consumer_race'],race['consumer_race'])
+            self.assertEqual(release.test_summary(log)['flight_recorder'],recorder['flight_recorder'])
             for short in (0,1,999):
                 altered = {'consumer_race':dict(race['consumer_race'],runs=short,allowed=short,exhausted=short)}
                 records[-1]={'Output':json.dumps(altered)}
@@ -53,7 +63,7 @@ class ReleaseGuardTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     release.test_summary(log)
             records[-1]={'Output':json.dumps(race)}
-            records[0]['Action']='fail'
+            records[1]['Action']='fail'
             log.write_text('\n'.join(json.dumps(record) for record in records))
             with self.assertRaises(RuntimeError):
                 release.test_summary(log)
@@ -88,6 +98,7 @@ class ReleaseGuardTests(unittest.TestCase):
             for name in release.REQUIRED:
                 kwargs['stdout'].write(json.dumps({'Test':name,'Action':'pass'})+'\n')
             kwargs['stdout'].write(json.dumps({'Output':json.dumps({'consumer_race':{'runs':1000,'allowed':1000,'exhausted':1000,'callers_per_run':2,'remaining_uses':0}})})+'\n')
+            kwargs['stdout'].write(json.dumps({'Output':json.dumps({'flight_recorder':{'tamper_cases':1,'tamper_caught':1,'crash_kills':1,'crash_verified':1,'thread_entries':2,'process_entries':2}})})+'\n')
             return types.SimpleNamespace(returncode=0)
         with tempfile.TemporaryDirectory() as directory, mock.patch.object(release.subprocess,'run',side_effect=run):
             logs=pathlib.Path(directory)

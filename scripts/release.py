@@ -22,7 +22,8 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGETS = ('linux-amd64', 'linux-arm64', 'darwin-amd64', 'darwin-arm64', 'windows-amd64')
-REQUIRED = ('TestConsumeSingleUseRace1000', 'TestConsumeCrashRecovery/before-commit', 'TestConsumeCrashRecovery/after-commit', 'TestConsumeCommitFailureRollsBack', 'TestRevocationDuringInFlightHTTP', 'TestHTTPUsesSavedPolicyVersion')
+REQUIRED = ('TestConsumeSingleUseRace1000', 'TestConsumeCrashRecovery/before-commit', 'TestConsumeCrashRecovery/after-commit', 'TestConsumeCommitFailureRollsBack', 'TestRevocationDuringInFlightHTTP', 'TestHTTPUsesSavedPolicyVersion',
+            'TestFlightTamperingIsCaught', 'TestFlightConcurrentWriters', 'TestFlightConcurrentProcesses', 'TestFlightCrashMidWrite', 'TestFlightAppendFailureRollsBackDecision', 'TestFlightRecorderEvidence')
 
 
 def command(args, **kwargs):
@@ -194,6 +195,11 @@ def smoke(binary, log):
             assert status == 403 and refusal['code'] == 'grant_revoked'
             exported = subprocess.check_output([str(binary), 'log', '--export'], env=env, text=True, timeout=15)
             assert len(exported.splitlines()) == 2 and issued['secret'] not in exported
+            # Issue, two request/decision pairs and the revocation: six chained entries.
+            verified = subprocess.check_output([str(binary), 'flight', 'verify', '--db', str(state / 'db')], text=True, timeout=15)
+            assert 'Intact: 6 entries' in verified, verified
+            replay = subprocess.check_output([str(binary), 'flight', 'replay', '--db', str(state / 'db'), '--agent', 'smoke-agent'], text=True, timeout=15)
+            assert 'revoked by' in replay and issued['secret'] not in replay
         finally:
             if process.poll() is None:
                 process.terminate() if os.name == 'nt' else process.send_signal(signal.SIGTERM)
@@ -251,7 +257,7 @@ def build(target):
 
 
 def test_summary(path):
-    outcomes, race = {}, None
+    outcomes, race, recorder = {}, None, None
     for line in path.read_text(encoding='utf-8').splitlines():
         record = json.loads(line)
         if record.get('Test') and record.get('Action') in ('pass', 'fail', 'skip'):
@@ -260,11 +266,16 @@ def test_summary(path):
         start = text.find('{"consumer_race":')
         if start >= 0:
             race = json.loads(text[start:].strip())['consumer_race']
-    if any(outcomes.get(name) != 'pass' for name in REQUIRED) or 'fail' in outcomes.values() or not race:
-        raise RuntimeError('Required failure tests or race measurements are missing')
+        start = text.find('{"flight_recorder":')
+        if start >= 0:
+            recorder = json.loads(text[start:].strip())['flight_recorder']
+    if any(outcomes.get(name) != 'pass' for name in REQUIRED) or 'fail' in outcomes.values() or not race or not recorder:
+        raise RuntimeError('Required failure tests, race or flight recorder measurements are missing')
+    if recorder.get('tamper_cases', 0) < 1 or recorder['tamper_caught'] != recorder['tamper_cases'] or recorder.get('crash_kills', 0) < 1 or recorder['crash_verified'] != recorder['crash_kills'] or recorder.get('thread_entries', 0) < 1 or recorder.get('process_entries', 0) < 1:
+        raise RuntimeError('Flight recorder measurements failed')
     if race.get('runs') != 1000 or race.get('callers_per_run',0) < 2 or race['allowed'] != race['runs'] or race['exhausted'] != race['runs'] or race['remaining_uses'] != 0:
         raise RuntimeError('Single-use race measurements failed')
-    return {'required_tests': {name: outcomes[name] for name in REQUIRED}, 'consumer_race': race}
+    return {'required_tests': {name: outcomes[name] for name in REQUIRED}, 'consumer_race': race, 'flight_recorder': recorder}
 
 
 def latest_allowed(tag, latest):

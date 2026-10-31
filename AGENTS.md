@@ -130,7 +130,7 @@ Owner request, 2026-10-31. This section is the hand-off: Claude, ChatGPT/Codex o
 
 **Steps** (tick and push with the code as each finishes):
 
-- [ ] 1. `internal/flight`: entry type, hash, JSONL encode/decode, verifier, replay formatting, with unit tests (edit, delete, reorder, truncate, torn last line, bad head, partial exports)
+- [x] 1. `internal/flight`: entry type, hash, JSONL encode/decode, verifier, replay formatting, with unit tests (edit, delete, reorder, truncate, torn last line, bad head, partial exports)
 - [ ] 2. Store: migration 004, append on grant issue/revoke, consume (request + decision) and upstream completion; read, filter and export; tests incl. concurrent writers on separate connections and a process killed mid-write
 - [ ] 3. CLI `tokening flight verify|export|replay|head`, tests
 - [ ] 4. Recorded results: a `{"flight_recorder": ...}` summary line from the tests, parsed by `scripts/release.py` into `test-results.json`; new required tests listed there
@@ -139,4 +139,4 @@ Owner request, 2026-10-31. This section is the hand-off: Claude, ChatGPT/Codex o
 - [ ] 7. Version 0.1.2 and approved `release-readiness.json` digest; watch CI and the release; check assets, SHA256SUMS, latest/download links and run a downloaded binary
 - [ ] 8. Site: one post on tokening.net plus Quick start, Download and Reference updates; check the Pages deploy once
 
-**Resume here.** Step 1 is next. Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.
+**Resume here.** Step 2 is next (store integration). Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.

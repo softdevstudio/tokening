@@ -61,7 +61,9 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## v0.1.2: flight recorder (shipped)
 
 - [x] Hash-chained flight log, `tokening flight verify|export|replay|head`, tests, docs, release v0.1.2, site post (owner request, 2026-10-31). Details in the "Flight recorder (v0.1.2): done" section of `AGENTS.md`.
+- [x] Independent review of the flight recorder, four fixes, v0.1.3 (2026-10-31, `docs/review-v0.1.3.md`)
 - [ ] Optional: admin API route for flight export
+- [ ] Decide with the owner: keyed (HMAC) digests for args and bindings
 
 ## v0.1.2 follow-ups (from the v0.1.1 review, none blocking)
 
@@ -72,6 +74,8 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-31, Claude (independent reviewer).** Reviewed the v0.1.2 flight recorder without relying on the earlier self-review. Four bugs confirmed with failing tests first (pushed in 13610ef, output read from CI annotations): non-canonical JSONL lines verified, replay --file called a file with removed entries intact, agent input could push a request entry past the 1 MiB line limit, replay left tool names with spaces unquoted. Fixed in 3cb8a3c and released as v0.1.3 by the release workflow; assets, SHA256SUMS, latest/download links and the downloaded Linux binary checked. CI prints failing tests as annotations. Site: badge, Download, Reference, two posts' release wording and the evidence file. Open: unkeyed digests (docs say so), pre-match rejections not recorded, see docs/review-v0.1.3.md.
 
 - **2026-10-31, Claude.** Owner asked for an agent flight recorder. Planned it in AGENTS.md/CLAUDE.md first, then built `internal/flight` (hash, JSONL, verifier, replay text), migration 004 with appends in grant issue/revoke, consume and upstream completion, and `tokening flight verify|export|replay|head`. Release evidence now requires the flight tests and their summary; the archive smoke check verifies and replays a flight log; CI shows the measured summaries as annotations (log hosts are blocked from cloud sessions). Second-pass review fixed replay quoting of control characters, usage output and docs coverage. v0.1.2 published by the release workflow; latest/download links, SHA256SUMS and a downloaded Linux binary checked. Site: new post, Download, Quick start, Reference, hero badge and test-results.json updated. Local note: modernc.org and proxy.golang.org are unreachable from this sandbox, so database tests ran only in CI. Next: optional admin export route, the v0.1.2 follow-ups below, then v0.2 with the owner.
 

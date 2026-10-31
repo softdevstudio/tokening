@@ -19,12 +19,10 @@ Shipped 2026-10-31 as v0.1.2 (release run 41189145735, CI run 41188972690, tag o
 
 **Next.** Optional admin API route for flight export (remote operators currently need file access to the database); the three v0.1.2 wording/test follow-ups in `TODO.md`; then the plan's v0.2 milestone, agreed with the owner first. CI prints the consumer-race and flight summaries as notice annotations, because job log and artifact hosts are blocked from cloud sessions.
 
-## In progress: independent review of flight recorder
+## Independent review of the flight recorder: done (v0.1.3)
 
-Started 2026-10-31 by Claude (independent reviewer, did not write the v0.1.2 code). Scope: `internal/flight`, `internal/store/flight.go`, `cmd/tokening/flight.go`, every place the gateway writes flight entries (grant issue/revoke, MCP and REST calls, decisions, upstream results), `docs/flight.md`, the release workflow's flight checks.
+Done 2026-10-31 by Claude in a session that did not write the v0.1.2 code. Full findings: `docs/review-v0.1.3.md`. Shipped as v0.1.3 (CI run 41190710547, release run 41190855180, tag on 3cb8a3c); latest/download links, SHA256SUMS and the downloaded Linux binary checked; site updated (badge, Download, Reference, evidence file).
 
-What gets checked: canonical encoding of hashed fields (boundaries, unicode, numbers, ordering); actions that skip logging (error paths, early returns, panics, denied, revoked or expired grants, upstream timeouts); transaction boundaries; races between reading the previous hash and inserting; verify accepting a forged chain (head, `--partial`, sequence gaps, AUTOINCREMENT); secrets in arg names, errors or upstream results; export filters; control characters in replay/export; large or malformed input.
+Fixed, each with a test that failed first: verify and replay accepted non-canonical JSONL lines (duplicate or case-variant keys, spaces), so other readers could see values verify never checked; `replay --file` said "Chain intact" for a file with entries cut out; agent-chosen tool and argument names could make a request entry longer than the 1 MiB line limit, so exports stopped verifying from a file (now bounded: 256-byte action and target, at most 100 names of 128 bytes, with counts); replay left tool names with spaces or Unicode spaces unquoted.
 
-Method: a failing test first for each suspected bug, then the fix. Database tests run only in CI (proxy.golang.org and modernc.org are unreachable from cloud sessions); results are read from check-run annotations.
-
-Resume: read the latest commits on main and the findings list in `docs/review-v0.1.3.md` (created as findings are confirmed).
+Still open (owner's call or v0.2): `args_digest` and `bindings_digest` are unkeyed SHA-256, so guessable values (post IDs) can be found by trying candidates (now stated in docs/flight.md; an HMAC with a stored key would fix it); requests rejected before matching (such as `_method` overrides) are not recorded anywhere; a database row with a malformed hash makes verify fail closed without naming the entry. CI now prints failing test output as error annotations.

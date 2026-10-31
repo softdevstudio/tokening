@@ -139,7 +139,7 @@ func TestFlightCLIBrokenFiles(t *testing.T) {
 	}
 	_, head, _ := flightRun("head", "--db", db)
 	truncated := strings.Join(lines[:6], "")
-	if code, out, _ := flightRun("verify", "--file", write("truncated", truncated), "--head", strings.TrimSpace(head)); code != 1 || !strings.Contains(out, "removed from the end") {
+	if code, out, _ := flightRun("verify", "--file", write("truncated", truncated), "--head", strings.TrimSpace(head)); code != 1 || !strings.Contains(out, "entries were removed, or the chain was rebuilt shorter") {
 		t.Fatalf("truncated: %d %s", code, out)
 	}
 	partial := strings.Join([]string{lines[0], lines[2], lines[5]}, "")

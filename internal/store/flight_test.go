@@ -312,7 +312,7 @@ func TestFlightTamperingIsCaught(t *testing.T) {
 	}
 	for keep := 0; keep < n; keep++ {
 		r := tamperCase(t, golden, fmt.Sprintf(`DELETE FROM flight WHERE seq>%d`, keep), flight.Options{})
-		check(!r.OK && strings.Contains(r.Problem.Reason, "removed from the end"), fmt.Sprintf("truncate to %d", keep), r)
+		check(!r.OK && r.Shortened && strings.Contains(r.Problem.Reason, "entries were removed, or the chain was rebuilt shorter"), fmt.Sprintf("truncate to %d", keep), r)
 	}
 	head := flight.Anchor{Seq: entries[n-1].Seq, Hash: entries[n-1].Hash}
 	for keep := 0; keep < n; keep++ {
@@ -321,7 +321,7 @@ func TestFlightTamperingIsCaught(t *testing.T) {
 			t.Fatalf("a clean truncation with a reset counter should only be caught by a saved head: %+v", r.Problem)
 		}
 		r := tamperCase(t, golden, reset, flight.Options{Head: &head})
-		check(!r.OK && strings.Contains(r.Problem.Reason, "removed from the end"), fmt.Sprintf("truncate to %d with counter reset", keep), r)
+		check(!r.OK && r.HeadMismatch && strings.Contains(r.Problem.Reason, "entries were removed, or the chain was rebuilt shorter"), fmt.Sprintf("truncate to %d with counter reset", keep), r)
 	}
 	// After a tail deletion the next append leaves a permanent gap.
 	path := filepath.Join(t.TempDir(), "db")

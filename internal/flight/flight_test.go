@@ -189,7 +189,7 @@ func TestTruncationIsCaughtWithSavedHead(t *testing.T) {
 	}
 	for keep := 0; keep < 20; keep++ {
 		r := verify(base[:keep], Options{Head: &head})
-		if r.OK || !strings.Contains(r.Problem.Reason, "removed from the end") {
+		if r.OK || !strings.Contains(r.Problem.Reason, "entries were removed, or the chain was rebuilt shorter") {
 			t.Fatalf("truncated to %d: %+v", keep, r.Problem)
 		}
 	}

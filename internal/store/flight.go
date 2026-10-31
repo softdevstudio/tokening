@@ -81,9 +81,13 @@ func recordFlightCall(ctx context.Context, tx *sql.Tx, grant *matcher.Grant, age
 		return err
 	}
 	grantID := d.Grant
-	request := flight.RequestBody{Target: call.Target, Action: callAction(call), ArgsDigest: hex.EncodeToString(digest[:]), Args: flight.SortedNames(call.Args)}
+	// Tool and argument names come from the agent. They are bounded so one
+	// request cannot produce an entry too long to verify from an export; the
+	// digest still covers the whole call.
+	request := flight.RequestBody{Target: flight.Clip(call.Target, flight.MaxActionBytes), Action: flight.Clip(callAction(call), flight.MaxActionBytes), ArgsDigest: hex.EncodeToString(digest[:])}
+	request.Args, request.ArgsOmitted = flight.BoundNames(flight.SortedNames(call.Args))
 	if len(call.Query) > 0 {
-		request.Query = flight.SortedNames(call.Query)
+		request.Query, request.QueryOmitted = flight.BoundNames(flight.SortedNames(call.Query))
 	}
 	if err = appendFlight(ctx, tx, flight.KindRequest, agent, grantID, now, request); err != nil {
 		return err

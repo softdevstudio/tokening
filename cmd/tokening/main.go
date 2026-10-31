@@ -9,7 +9,7 @@ import (
 	"github.com/softdevstudio/tokening/internal/policy"
 )
 
-const version = "0.1.2"
+const version = "0.1.3"
 
 func run(args []string, out, errOut io.Writer) int {
 	if len(args) > 0 {

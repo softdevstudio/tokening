@@ -1,9 +1,9 @@
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "status": "approved",
-  "source_sha256": "4e9d2b18bb94d8288cb817749b1ffa4dbb06134d89b54ab0400b2e1efc62fedd",
-  "reviewer": "Second-pass source review by Claude (no separate agent available in this session)",
+  "source_sha256": "6f0e5eb013526a2290b290c89314304a0c82ea78027cbdc3e65f7cfa6ff526a2",
+  "reviewer": "Independent review of the v0.1.2 flight recorder by Claude in a separate session that did not write it; the fixes were written by the same reviewer",
   "reviewed_on": "2026-10-31",
-  "review_document": "docs/review-v0.1.2.md",
-  "base_commit": "a7797a39fe7817054da8c2ff89d1095447bb4499"
+  "review_document": "docs/review-v0.1.3.md",
+  "base_commit": "13610ef"
 }

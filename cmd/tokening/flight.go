@@ -306,6 +306,12 @@ func replayFooter(out io.Writer, r flight.Report, shown int) int {
 		fmt.Fprintln(out, "No entries match.")
 	}
 	if r.OK {
+		// Every hash checked and every link between consecutive entries holds,
+		// but entries missing from a file could be a filter or a removal.
+		if missing := r.LastSeq - uint64(r.Entries); r.Entries > 0 && missing > 0 {
+			fmt.Fprintf(out, "Every entry here checks out, but %d of entries 1 to %d are missing from this file: it is a filtered export, or entries were removed. Verify the whole log with tokening flight verify --db.\n", missing, r.LastSeq)
+			return 0
+		}
 		fmt.Fprintf(out, "Chain intact through entry %d.\n", r.LastSeq)
 		return 0
 	}

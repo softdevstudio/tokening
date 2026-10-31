@@ -12,7 +12,7 @@ The recorder needs no setup. A database created or upgraded by Tokening v0.1.2 r
 | --- | --- | --- |
 | `grant` | A grant is issued | `event: "issued"`, template and version, target, action, uses, expiry, who issued it and why, the names of bound arguments and a SHA-256 digest of the bindings |
 | `grant` | A grant is revoked (first time only) | `event: "revoked"`, who revoked it |
-| `request` | Any call reaches the gateway, including unknown tokens | target, action (MCP tool, or method and path), argument names, query names and the SHA-256 digest of the call |
+| `request` | Any call reaches the gateway, including unknown tokens | target, action (MCP tool, or method and path), argument names, query names and the SHA-256 digest of the call. The action and target are cut to 256 bytes and at most 100 argument names (and 100 query names) of up to 128 bytes each are kept; `args_omitted` and `query_omitted` count the rest. The digest covers the whole call |
 | `decision` | Straight after its request | `decision_id` (the row in the decisions table), outcome, code, the readable reason, and uses left after the decision |
 | `result` | An allowed call finishes | `decision_id`, `authorization_id`, code, upstream HTTP status (or null when no answer came back) and latency |
 
@@ -20,7 +20,7 @@ Every entry also has `seq`, `at` (UTC, milliseconds), `kind`, `agent` (the grant
 
 A request here means an MCP `tools/call` or a REST call, the same calls that get a row in the decisions table. MCP `initialize`, `tools/list`, `ping` and `GET /grant` read the grant without spending anything and are not recorded. Neither are requests turned away before matching because they are malformed, too large or encoded. If the database fails after an allowed call was forwarded, the result entry can be missing; the decision entry stands and the server logs the failure.
 
-Entries never hold credentials, bearer secrets, bearer hashes or argument values. A request lists argument names only. The digest is the same one the decisions table stores, so an operator who still has the original call can show that it matches. Reasons follow the refusal rules: numbers can appear, string values never do. The grant's `reason` text is the operator's own note from `grant issue`.
+Entries never hold credentials, bearer secrets, bearer hashes or argument values. A request lists argument names only. The digest is the same one the decisions table stores, so an operator who still has the original call can show that it matches. The digests are plain SHA-256 with no secret key, so a value that is short or easy to guess, such as a post ID, can be found by trying candidates. Treat an export like the decisions table and share it with people who may know which posts or records an agent touched. Reasons follow the refusal rules: numbers can appear, string values never do. The grant's `reason` text is the operator's own note from `grant issue`.
 
 ## How entries are chained
 
@@ -59,11 +59,11 @@ Broken at entry 5: entry 4 is missing between entries 3 and 5.
 Entries 1 to 3 verify. Last good head: 3:9c1e...
 ```
 
-A file whose last line was cut off by an interrupted write verifies up to its last complete entry and names the cut line. A filtered export skips entries on purpose, so it fails a normal check; `--partial` accepts it, checks every entry's own hash, and checks links wherever seq numbers are consecutive. Files whose lines are longer than 1 MiB are refused.
+Each line of a file must be exactly what `export` writes, byte for byte. A line with an extra space, a repeated or renamed key or a different escape is refused, even when its hash still matches, because other JSON readers might show a different value from the one verify checked. A file whose last line was cut off by an interrupted write verifies up to its last complete entry and names the cut line. A filtered export skips entries on purpose, so it fails a normal check; `--partial` accepts it, checks every entry's own hash, and checks links wherever seq numbers are consecutive. Files whose lines are longer than 1 MiB are refused.
 
 `head` prints the last entry as `SEQ:HASH`. Save it somewhere the database's owner cannot rewrite: a ticket, a commit, a message to a colleague, a printout. Later, `verify --head SEQ:HASH` proves that entry is still in the chain with the same hash.
 
-`replay` prints the matching entries in order as a readable timeline, then whether the chain is intact. It checks the full chain first, so a broken log is flagged even when the filter shows only one agent:
+`replay` prints the matching entries in order as a readable timeline, then whether the chain is intact. It checks the full chain first, so a broken log is flagged even when the filter shows only one agent. With `--file`, entries missing from the file can be a filter or a removal, so the last line says how many are missing instead of calling the chain intact. Names, tool names and paths that hold spaces, quotes or control characters are printed quoted:
 
 ```
 #12  2026-10-31T10:02:03.120Z  grant     g_1a2b issued to editor-bot by operator: wp.edit-post-text on wp_update_post, 1 use, expires 2026-10-31T10:17:03.120Z, bound id, reason "fix title"

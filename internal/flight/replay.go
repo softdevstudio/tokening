@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Body shapes written by internal/store. Fields are optional on decode so a
@@ -32,7 +34,48 @@ type RequestBody struct {
 	ArgsDigest string   `json:"args_digest"`
 	Args       []string `json:"args"`
 	Query      []string `json:"query,omitempty"`
+	// ArgsOmitted and QueryOmitted count names left out because the agent sent
+	// more than MaxNames. The digest still covers the whole call.
+	ArgsOmitted  int `json:"args_omitted,omitempty"`
+	QueryOmitted int `json:"query_omitted,omitempty"`
 }
+
+// Limits for agent-chosen text in a request entry. They keep every entry far
+// below MaxLine, even when each character doubles in size as a JSON escape.
+const (
+	MaxActionBytes = 256
+	MaxNameBytes   = 128
+	MaxNames       = 100
+)
+
+// Clip shortens s to at most n bytes on a character boundary, marking the cut
+// with "…".
+func Clip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	cut := n - len("…")
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut] + "…"
+}
+
+// BoundNames returns the first MaxNames names, each clipped to MaxNameBytes,
+// and how many were left out.
+func BoundNames(names []string) ([]string, int) {
+	omitted := 0
+	if len(names) > MaxNames {
+		omitted = len(names) - MaxNames
+		names = names[:MaxNames]
+	}
+	out := make([]string, len(names))
+	for i, name := range names {
+		out[i] = Clip(name, MaxNameBytes)
+	}
+	return out, omitted
+}
+
 type DecisionBody struct {
 	DecisionID int64  `json:"decision_id"`
 	Outcome    string `json:"outcome"`
@@ -109,14 +152,20 @@ func FormatEntry(e Entry) string {
 			if len(b.Args) > 0 {
 				names = "arguments " + safeList(b.Args)
 			}
+			if b.ArgsOmitted > 0 {
+				names += fmt.Sprintf(" and %d more", b.ArgsOmitted)
+			}
 			if len(b.Query) > 0 {
 				names += ", query " + safeList(b.Query)
+			}
+			if b.QueryOmitted > 0 {
+				names += fmt.Sprintf(" and %d more", b.QueryOmitted)
 			}
 			digest := safe(b.ArgsDigest)
 			if len(digest) > 12 {
 				digest = digest[:12]
 			}
-			text = fmt.Sprintf("%s%s asked for %s on %s with %s (digest %s)", grant, who, safe(b.Action), safe(b.Target), names, digest)
+			text = fmt.Sprintf("%s%s asked for %s on %s with %s (digest %s)", grant, who, action(b.Action), quoteIfNeeded(b.Target), names, digest)
 		}
 	case KindDecision:
 		var b DecisionBody
@@ -158,10 +207,25 @@ func uses(n int) string {
 
 func quote(s string) string { return strconv.QuoteToGraphic(s) }
 
-// quoteIfNeeded keeps plain names bare and quotes anything with spaces,
-// quotes or non-printing characters, so a name cannot fake a replay line.
+// quoteIfNeeded keeps plain names bare and quotes anything with spaces of any
+// kind, quotes or non-printing characters, so a name cannot fake a replay line.
 func quoteIfNeeded(s string) string {
-	if s != "" && !strings.ContainsAny(s, " \"") && graphic(s) {
+	if s != "" && !strings.ContainsRune(s, '"') && graphic(s) && !strings.ContainsFunc(s, unicode.IsSpace) && !strings.ContainsFunc(s, func(r rune) bool { return unicode.Is(unicode.Zs, r) }) {
+		return s
+	}
+	return quote(s)
+}
+
+var (
+	plainTool = regexp.MustCompile(`\A[A-Za-z0-9_./:{}-]+\z`)
+	plainREST = regexp.MustCompile(`\A[A-Z]+ /[A-Za-z0-9_./:{}~%-]*\z`)
+)
+
+// action keeps an ordinary MCP tool name or "METHOD /path" bare. Anything
+// else came from the agent in an unusual form and is quoted, so it cannot pass
+// as the rest of the sentence.
+func action(s string) string {
+	if plainTool.MatchString(s) || plainREST.MatchString(s) {
 		return s
 	}
 	return quote(s)

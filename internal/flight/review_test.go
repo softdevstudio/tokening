@@ -74,3 +74,35 @@ func TestFormatEntryQuotesActionsWithSpaces(t *testing.T) {
 		t.Fatalf("REST action with a space not quoted: %s", line)
 	}
 }
+
+func TestFormatEntryQuotesUnicodeSpaces(t *testing.T) {
+	body, _ := NewBody(RequestBody{Target: "demo-wp", Action: "wp_get_post on demo-wp", ArgsDigest: strings.Repeat("ab", 32), Args: []string{"id　x"}})
+	line := FormatEntry(Entry{Seq: 2, Kind: KindRequest, Agent: "bot x", Grant: "g_1", Body: body})
+	for _, want := range []string{`"wp_get_post on demo-wp"`, `"bot x"`, `"id　x"`} {
+		if !strings.Contains(line, want) {
+			t.Fatalf("missing %s in %s", want, line)
+		}
+	}
+}
+
+func TestBoundNamesAndClip(t *testing.T) {
+	if got := Clip(strings.Repeat("é", 200), 11); got != "éééé…" {
+		t.Fatalf("clip %q", got)
+	}
+	if Clip("short", MaxActionBytes) != "short" {
+		t.Fatal("short text clipped")
+	}
+	names := make([]string, 150)
+	for i := range names {
+		names[i] = strings.Repeat("x", 500)
+	}
+	out, omitted := BoundNames(names)
+	if len(out) != MaxNames || omitted != 50 || len(out[0]) > MaxNameBytes {
+		t.Fatalf("%d %d %d", len(out), omitted, len(out[0]))
+	}
+	body, _ := NewBody(RequestBody{Action: "x", Args: out, ArgsOmitted: omitted})
+	line := FormatEntry(Entry{Seq: 2, Kind: KindRequest, Grant: "g_1", Body: body})
+	if !strings.Contains(line, "and 50 more") {
+		t.Fatal(line)
+	}
+}

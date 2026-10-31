@@ -1,3 +1,19 @@
+# Tokening v0.1.3
+
+A bug-fix release for the flight recorder, after an independent review of the v0.1.2 code. Grant checking, consumption, credentials and the database schema are unchanged. Logs written by v0.1.2 verify with v0.1.3.
+
+- `flight verify --file` and `flight replay --file` now accept only lines that are exactly what `flight export` writes. Before, a line with a repeated key, a key in other letter case or extra spaces still verified. A reader that takes the first of two repeated keys, or a plain text search, could then see a value that verify never checked.
+- `flight replay --file` no longer says "Chain intact" when entries are missing from the file. It says how many are missing, since that can be a filtered export or a removal, and points to verifying the whole log.
+- An agent could send a tool name or argument names that, once written as JSON, made one request entry longer than the 1 MiB line limit, so the export could not be verified or replayed from a file. The action and target are now cut to 256 bytes, and at most 100 argument names of up to 128 bytes are kept, with a count of the rest. The digest still covers the whole call.
+- Replay now quotes tool names, paths and names that contain spaces of any kind, including no-break and wide spaces, so agent-chosen text cannot read as part of the replay sentence.
+- docs/flight.md now says plainly that the argument and binding digests have no secret key, so short or guessable values can be found by trying candidates.
+
+The review is in docs/review-v0.1.3.md. It is a project source review, not an external security audit.
+
+Download the archive for your operating system and architecture, verify it against SHA256SUMS and read README.md inside it. Archive names have no version, so latest/download links keep working.
+
+Licence: Apache 2.0. Third-party notices are included in every archive.
+
 # Tokening v0.1.2
 
 This release adds the flight recorder. Grant checking, consumption and credential handling are unchanged from v0.1.1.

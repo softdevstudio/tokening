@@ -142,6 +142,16 @@ func UnmarshalLine(line []byte) (Entry, error) {
 	if err = checkFields(e); err != nil {
 		return Entry{}, err
 	}
+	// Accept only the exact bytes an export writes. JSON readers differ on
+	// duplicate keys, key case and whitespace; a line that is not canonical
+	// could show one value to another tool while verify checks a different one.
+	canonical, err := MarshalLine(e)
+	if err != nil {
+		return Entry{}, err
+	}
+	if !bytes.Equal(bytes.TrimSuffix(canonical, []byte("\n")), line) {
+		return Entry{}, errors.New("not in the exact form tokening flight export writes (duplicate or renamed keys, extra spaces or different escapes)")
+	}
 	return e, nil
 }
 

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/softdevstudio/tokening/internal/flight"
-	"github.com/softdevstudio/tokening/internal/version"
+	buildversion "github.com/softdevstudio/tokening/internal/version"
 )
 
 // v0.1.4: --head given but empty used to skip the head check and exit 0, so a
@@ -134,7 +134,7 @@ func TestVersionCommandUsesBuildVersion(t *testing.T) {
 	var stdout, stderr strings.Builder
 	code := run([]string{"version"}, &stdout, &stderr)
 	out := stdout.String()
-	if code != 0 || strings.TrimSpace(out) != "tokening "+version.Version {
-		t.Fatalf("version: %d %q, want tokening %s", code, out, version.Version)
+	if code != 0 || strings.TrimSpace(out) != "tokening "+buildversion.Version {
+		t.Fatalf("version: %d %q, want tokening %s", code, out, buildversion.Version)
 	}
 }

@@ -3,7 +3,7 @@
 Tokening's internal store opens one on-disk SQLite database. It uses the pure-Go
 `modernc.org/sqlite` driver, so no C compiler or external database server is needed.
 The running server and grant commands use this package.
-There is no database CLI command yet.
+The `tokening flight` commands open the database read-only; they never create a file or apply migrations.
 
 Keep the database in a private directory controlled by the operator. The store
 creates the database with mode 0600 and restricts an existing file to the same
@@ -39,7 +39,10 @@ Audit decisions are append-only through SQL triggers. An unknown-token refusal
 can have a null grant ID. Arguments are represented by a SHA-256 digest, and
 response bodies have no storage column. These checks protect normal application
 writes. Someone who can modify the database directly can remove triggers, so
-this is not a tamper-evident audit system.
+the decisions table alone is not tamper-evident. Schema 4 adds the `flight`
+table: hash-chained entries written in the same transactions as grants,
+decisions and completions, with an AUTOINCREMENT counter and append-only
+triggers. See [the flight recorder](flight.md).
 
 Tests cover persistence, connection settings after pool replacement, foreign-key
 and counter checks, immutable template versions and append-only decisions.

@@ -48,9 +48,10 @@ writer when the client disconnects. No database connection is held during a
 writer call. Exporting does not mutate decisions, grant counters or credentials.
 
 Authorization rows have null upstream status and latency. The [REST forwarder](gateway.md) now appends a linked completion record with outcome metadata; it does not modify the original authorization. Only one completion is allowed per authorization. A completed export is
-not proof that an authorized upstream write succeeded. This is also an
-append-only application log, not a tamper-evident system against someone who can
-rewrite the database or remove its triggers.
+not proof that an authorized upstream write succeeded. The decisions table
+on its own is an append-only application log, not a tamper-evident one. The
+[flight recorder](flight.md) adds a hash-chained record of the same decisions,
+plus grant changes, requests and upstream results, in the same transactions.
 
 Tests cover multiple pages, cursor/filter behavior, optional upstream metadata,
 empty exports, cancellation, short writes and writer errors. A callback writer

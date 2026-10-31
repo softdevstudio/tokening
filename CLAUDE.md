@@ -31,11 +31,11 @@ Owner request, 2026-10-31. This section is the hand-off: Claude, ChatGPT/Codex o
 
 - [x] 1. `internal/flight`: entry type, hash, JSONL encode/decode, verifier, replay formatting, with unit tests (edit, delete, reorder, truncate, torn last line, bad head, partial exports)
 - [x] 2. Store: migration 004, append on grant issue/revoke, consume (request + decision) and upstream completion; read, filter and export; tests incl. concurrent writers on separate connections and a process killed mid-write
-- [ ] 3. CLI `tokening flight verify|export|replay|head`, tests
-- [ ] 4. Recorded results: a `{"flight_recorder": ...}` summary line from the tests, parsed by `scripts/release.py` into `test-results.json`; new required tests listed there
-- [ ] 5. Docs: `docs/flight.md`, README section, storage/audit docs, CHANGELOG for v0.1.2
+- [x] 3. CLI `tokening flight verify|export|replay|head`, tests
+- [x] 4. Recorded results: a `{"flight_recorder": ...}` summary line from the tests, parsed by `scripts/release.py` into `test-results.json`; new required tests listed there
+- [x] 5. Docs: `docs/flight.md`, README section, storage/audit docs, CHANGELOG for v0.1.2
 - [ ] 6. Independent review (separate agent or a fresh second pass), fixes, results recorded again; `docs/review-v0.1.2.md`
 - [ ] 7. Version 0.1.2 and approved `release-readiness.json` digest; watch CI and the release; check assets, SHA256SUMS, latest/download links and run a downloaded binary
 - [ ] 8. Site: one post on tokening.net plus Quick start, Download and Reference updates; check the Pages deploy once
 
-**Resume here.** Steps 3 (CLI, `cmd/tokening/flight.go`) and 4 (`scripts/release.py` parses the flight summary; CI prints both summaries as notice annotations, since job log and artifact hosts are blocked from cloud sessions) are pushed; confirm CI is green, then tick them. Step 5 (docs) is next. Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.
+**Resume here.** Step 6 (independent review of the diff from v0.1.1, 742bf7b) is next. CI run 41188462034 measured: 208 of 208 tamper cases caught, 800 entries from 8 connections and 400 from 4 processes intact, 20 of 20 kill-mid-write rounds verified. Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.

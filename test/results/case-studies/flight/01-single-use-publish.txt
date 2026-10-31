@@ -1,0 +1,42 @@
+# Case 1: a single-use publish grant, replayed
+# Recorded by run.py with tokening 0.1.3 on 2026-10-31
+
+# publisher-bot got grant g_55cbfbfd58d8c70d827674d9a1b126f6: publish_post, bound to id 7, one use, 15 minutes.
+# It called tools/list (publish_post), then publish_post on id 8, on id 7, and on id 7 again.
+# Calls the stub CMS actually received: [{"tool": "publish_post", "id": 7}, {"tool": "update_post", "id": 3}]
+
+# What the agent was told for each call:
+# publish_post {"id": 8} -> error: {"allowed":false,"code":"arg_mismatch","reason":"Grant is bound to id 7; call sent id 8.","grant":"g_55cbfbfd58d8c70d827674d9a1b126f6"}
+# publish_post {"id": 7} -> post 7 saved
+# publish_post {"id": 7} -> error: {"allowed":false,"code":"grant_exhausted","reason":"Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left.","grant":"g_55cbfbfd58d8c70d827674d9a1b126f6"}
+
+# Verify was run while tokening serve was still running.
+
+$ tokening flight verify --db tokening.db
+Intact: 20 entries, 1 to 20.
+Head: 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+(exit 0)
+
+$ tokening flight replay --db tokening.db --agent publisher-bot
+#1  2026-10-31T10:14:07.894Z  grant     g_55cbfbfd58d8c70d827674d9a1b126f6 issued to publisher-bot by ops-maria: cms.publish-post on publish_post, 1 use, expires 2026-10-31T10:29:07.894Z, bound id, reason "publish the approved launch note"
+#2  2026-10-31T10:14:07.935Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 644da283c2c9)
+#3  2026-10-31T10:14:07.935Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (arg_mismatch): Grant is bound to id 7; call sent id 8. 1 use left.
+#4  2026-10-31T10:14:07.953Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#5  2026-10-31T10:14:07.953Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
+#6  2026-10-31T10:14:07.983Z  result    g_55cbfbfd58d8c70d827674d9a1b126f6 upstream answered HTTP 200 in 23 ms
+#7  2026-10-31T10:14:07.989Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#8  2026-10-31T10:14:07.989Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (grant_exhausted): Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left. 0 uses left.
+Chain intact through entry 20.
+(exit 0)
+
+$ tokening flight replay --db tokening.db --grant g_55cbfbfd58d8c70d827674d9a1b126f6
+#1  2026-10-31T10:14:07.894Z  grant     g_55cbfbfd58d8c70d827674d9a1b126f6 issued to publisher-bot by ops-maria: cms.publish-post on publish_post, 1 use, expires 2026-10-31T10:29:07.894Z, bound id, reason "publish the approved launch note"
+#2  2026-10-31T10:14:07.935Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 644da283c2c9)
+#3  2026-10-31T10:14:07.935Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (arg_mismatch): Grant is bound to id 7; call sent id 8. 1 use left.
+#4  2026-10-31T10:14:07.953Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#5  2026-10-31T10:14:07.953Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
+#6  2026-10-31T10:14:07.983Z  result    g_55cbfbfd58d8c70d827674d9a1b126f6 upstream answered HTTP 200 in 23 ms
+#7  2026-10-31T10:14:07.989Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#8  2026-10-31T10:14:07.989Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (grant_exhausted): Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left. 0 uses left.
+Chain intact through entry 20.
+(exit 0)

@@ -1,0 +1,72 @@
+# Use examples: each recipe run once against the case study database
+# Recorded by run.py with tokening 0.1.3 on 2026-10-31
+
+# Recipe 1: save the head from a job you already have (end of day, deploy, backup).
+# Shown as: tokening flight head --db tokening.db >> heads.txt
+
+$ tokening flight head --db tokening.db
+20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+(exit 0)
+
+$ tokening flight verify --db tokening.db --head 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+Intact: 20 entries, 1 to 20.
+Head: 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+The saved head is in the chain.
+(exit 0)
+
+# Recipe 2: verify in CI or before an audit. Exit 0 means intact, 1 means broken.
+# The broken copy here has one decision entry edited (see case 2).
+
+$ tokening flight verify --db tokening.db
+Intact: 20 entries, 1 to 20.
+Head: 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+(exit 0)
+
+$ tokening flight verify --db tampered.db
+Broken at entry 3: entry 3 does not match its own hash: its contents were changed after it was written.
+Entries 1 to 2 verify. Last good head: 2:4c9592e76b786f87206ec2fae9e765a5b738d06a4fa06a680b2fc134d5836c10
+(exit 1)
+
+# Recipe 3: export one agent's actions for a time window, then check the file.
+
+$ tokening flight export --db tokening.db --agent editor-bot --since 2026-10-31T10:14:06Z --until 2026-10-31T10:14:10Z --output editor-bot.jsonl
+Exported 10 entries.
+(exit 0)
+
+$ wc -l < editor-bot.jsonl
+10
+
+$ tokening flight verify --file editor-bot.jsonl --partial
+Intact as a partial export: 10 entries from 9 to 18, every hash checked, links checked where entries are consecutive.
+Head: 18:e7637ffc1e69d8c0080f596acedb7de42d31621468fdb740e47f54a1eafebd9f
+(exit 0)
+
+# Recipe 4: replay one grant after an incident.
+
+$ tokening flight replay --db tokening.db --grant g_41f0227dee31f9c433cfb1594dbf5968
+#9  2026-10-31T10:14:08.009Z  grant     g_41f0227dee31f9c433cfb1594dbf5968 issued to editor-bot by ops-maria: cms.edit-post-text on update_post, 2 uses, expires 2026-10-31T10:29:08.009Z, bound id, reason "fix typo in post 3 title"
+#10  2026-10-31T10:14:08.016Z  request   g_41f0227dee31f9c433cfb1594dbf5968 editor-bot asked for update_post on cms with arguments id, title (digest 87053af89cbe)
+#11  2026-10-31T10:14:08.016Z  decision  g_41f0227dee31f9c433cfb1594dbf5968 allowed: Call fits this grant. One use was consumed before forwarding. 1 use left.
+#12  2026-10-31T10:14:08.034Z  result    g_41f0227dee31f9c433cfb1594dbf5968 upstream answered HTTP 200 in 14 ms
+#13  2026-10-31T10:14:08.039Z  request   g_41f0227dee31f9c433cfb1594dbf5968 editor-bot asked for update_post on cms with arguments id, status, title (digest ee3b7a6acd18)
+#14  2026-10-31T10:14:08.039Z  decision  g_41f0227dee31f9c433cfb1594dbf5968 refused (arg_not_allowed): Grant does not allow argument status. Allowed: content, id, title. 1 use left.
+Chain intact through entry 20.
+(exit 0)
+
+# Recipe 5: what the log never stores. Full export searched for the grant secrets,
+# the upstream key and the argument values the agents sent.
+
+$ tokening flight export --db tokening.db > all.jsonl   # 20 lines
+searched for publish grant secret: not found
+searched for edit grant secret: not found
+searched for revoked grant secret: not found
+searched for unknown token: not found
+searched for upstream key: not found
+searched for title value 'Release notes': not found
+searched for title value 'Pricing 2027': not found
+searched for status value 'published': not found
+
+argument names in request entries:
+id
+id, status, title
+id, title

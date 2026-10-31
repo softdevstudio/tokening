@@ -1,0 +1,50 @@
+# Case 3: a full chain rebuild, caught only by a saved head
+# Recorded by run.py with tokening 0.1.3 on 2026-10-31
+
+# Head saved at the end of the session: 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+# Before the rebuild, run.py recomputed every hash in the real database from the format in docs/flight.md:
+# 20 of 20 entries matched.
+
+# The rebuild: drop both triggers, remove entries 2 and 3, renumber the rest, recompute every hash,
+# and reset SQLite's counter to the new last entry (18).
+
+$ tokening flight verify --db rebuilt.db
+Intact: 18 entries, 1 to 18.
+Head: 18:263dd5384f501d179b3e6b50d67a4696cf46f55312f60b01df203c7cdacbc9f5
+(exit 0)
+
+$ tokening flight replay --db rebuilt.db --agent publisher-bot
+#1  2026-10-31T10:14:07.894Z  grant     g_55cbfbfd58d8c70d827674d9a1b126f6 issued to publisher-bot by ops-maria: cms.publish-post on publish_post, 1 use, expires 2026-10-31T10:29:07.894Z, bound id, reason "publish the approved launch note"
+#2  2026-10-31T10:14:07.953Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#3  2026-10-31T10:14:07.953Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
+#4  2026-10-31T10:14:07.983Z  result    g_55cbfbfd58d8c70d827674d9a1b126f6 upstream answered HTTP 200 in 23 ms
+#5  2026-10-31T10:14:07.989Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#6  2026-10-31T10:14:07.989Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (grant_exhausted): Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left. 0 uses left.
+Chain intact through entry 18.
+(exit 0)
+
+$ tokening flight verify --db rebuilt.db --head 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+Broken: the saved head is entry 20 but the log ends at entry 18: entries were removed from the end.
+Entries 1 to 18 verify. Last good head: 18:263dd5384f501d179b3e6b50d67a4696cf46f55312f60b01df203c7cdacbc9f5
+(exit 1)
+
+# Second rebuild, same length: entry 3's outcome changed from refused to allowed, then every hash from
+# there on recomputed. Entry numbers and the counter stay as they were.
+
+$ tokening flight verify --db rebuilt-edit.db
+Intact: 20 entries, 1 to 20.
+Head: 20:6830fb9db5524cb072643a88ec98dd239e5b2e3af195858ebbcae800d2ef44e9
+(exit 0)
+
+$ tokening flight verify --db rebuilt-edit.db --head 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+Broken at entry 20: entry 20 has a different hash from the saved head: the log was rewritten from entry 20 or earlier.
+Entries 1 to 19 verify. Last good head: 19:51205c8c16f99f93f8331cd0382105c78549881a9f4ab6ec29d56fcdda904d70
+(exit 1)
+
+# The original database against the same saved head:
+
+$ tokening flight verify --db tokening.db --head 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+Intact: 20 entries, 1 to 20.
+Head: 20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c
+The saved head is in the chain.
+(exit 0)

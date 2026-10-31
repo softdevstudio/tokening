@@ -1,0 +1,46 @@
+{
+  "targets": {
+    "cms": {
+      "kind": "mcp_http",
+      "url": "http://127.0.0.1:18090/mcp",
+      "credential": {
+        "type": "bearer",
+        "ref": "vault:cms"
+      }
+    }
+  },
+  "templates": {
+    "cms.publish-post": {
+      "target": "cms",
+      "tool": "publish_post",
+      "args": {
+        "id": {
+          "bind": "required"
+        }
+      },
+      "additional_args": "refuse",
+      "max_uses": 1,
+      "max_ttl": "30m"
+    },
+    "cms.edit-post-text": {
+      "target": "cms",
+      "tool": "update_post",
+      "args": {
+        "id": {
+          "bind": "required"
+        },
+        "title": {
+          "type": "string",
+          "max_len": 200
+        },
+        "content": {
+          "type": "string",
+          "max_bytes": 32768
+        }
+      },
+      "additional_args": "refuse",
+      "max_uses": 3,
+      "max_ttl": "30m"
+    }
+  }
+}

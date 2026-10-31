@@ -1,0 +1,120 @@
+{
+  "tokening": "tokening 0.1.3",
+  "upstream": "local stub CMS speaking MCP over HTTP on 127.0.0.1",
+  "grants": {
+    "publish": "g_55cbfbfd58d8c70d827674d9a1b126f6",
+    "edit": "g_41f0227dee31f9c433cfb1594dbf5968",
+    "revoked": "g_985d70592504547842f46ee5f4c67d5e"
+  },
+  "tools_list_for_publish_grant": [
+    "publish_post"
+  ],
+  "agent_calls": [
+    {
+      "tool": "publish_post",
+      "arguments": {
+        "id": 8
+      },
+      "isError": true,
+      "text": "{\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Grant is bound to id 7; call sent id 8.\",\"grant\":\"g_55cbfbfd58d8c70d827674d9a1b126f6\"}"
+    },
+    {
+      "tool": "publish_post",
+      "arguments": {
+        "id": 7
+      },
+      "isError": false,
+      "text": "post 7 saved"
+    },
+    {
+      "tool": "publish_post",
+      "arguments": {
+        "id": 7
+      },
+      "isError": true,
+      "text": "{\"allowed\":false,\"code\":\"grant_exhausted\",\"reason\":\"Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left.\",\"grant\":\"g_55cbfbfd58d8c70d827674d9a1b126f6\"}"
+    },
+    {
+      "tool": "update_post",
+      "arguments": {
+        "id": 3,
+        "title": "Release notes"
+      },
+      "isError": false,
+      "text": "post 3 saved"
+    },
+    {
+      "tool": "update_post",
+      "arguments": {
+        "id": 3,
+        "title": "Release notes",
+        "status": "published"
+      },
+      "isError": true,
+      "text": "{\"allowed\":false,\"code\":\"arg_not_allowed\",\"reason\":\"Grant does not allow argument status. Allowed: content, id, title.\",\"grant\":\"g_41f0227dee31f9c433cfb1594dbf5968\"}"
+    },
+    {
+      "tool": "update_post",
+      "arguments": {
+        "id": 4,
+        "title": "Pricing 2027"
+      },
+      "isError": true,
+      "text": "{\"allowed\":false,\"code\":\"grant_revoked\",\"reason\":\"Grant g_985d70592504547842f46ee5f4c67d5e was revoked at 2026-10-31T10:14:08.073Z.\",\"grant\":\"g_985d70592504547842f46ee5f4c67d5e\"}"
+    },
+    {
+      "tool": "update_post",
+      "arguments": {
+        "id": 4,
+        "title": "x"
+      },
+      "isError": true,
+      "text": "HTTP 401 {\"allowed\":false,\"code\":\"grant_unknown\",\"reason\":\"No grant matches this token.\"}"
+    }
+  ],
+  "calls_that_reached_upstream": [
+    {
+      "tool": "publish_post",
+      "id": 7
+    },
+    {
+      "tool": "update_post",
+      "id": 3
+    }
+  ],
+  "posts_after": {
+    "3": {
+      "title": "Release notes",
+      "status": "draft"
+    },
+    "4": {
+      "title": "Pricing",
+      "status": "draft"
+    },
+    "7": {
+      "title": "Launch note",
+      "status": "published"
+    },
+    "8": {
+      "title": "Unreviewed draft",
+      "status": "draft"
+    }
+  },
+  "window": [
+    "2026-10-31T10:14:06Z",
+    "2026-10-31T10:14:10Z"
+  ],
+  "saved_head": "20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c",
+  "entries": 20,
+  "entries_recomputed_from_docs_format": 20,
+  "never_stored_search": {
+    "publish grant secret": false,
+    "edit grant secret": false,
+    "revoked grant secret": false,
+    "unknown token": false,
+    "upstream key": false,
+    "title value 'Release notes'": false,
+    "title value 'Pricing 2027'": false,
+    "status value 'published'": false
+  }
+}

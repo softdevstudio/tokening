@@ -26,3 +26,16 @@ Done 2026-10-31 by Claude in a session that did not write the v0.1.2 code. Full 
 Fixed, each with a test that failed first: verify and replay accepted non-canonical JSONL lines (duplicate or case-variant keys, spaces), so other readers could see values verify never checked; `replay --file` said "Chain intact" for a file with entries cut out; agent-chosen tool and argument names could make a request entry longer than the 1 MiB line limit, so exports stopped verifying from a file (now bounded: 256-byte action and target, at most 100 names of 128 bytes, with counts); replay left tool names with spaces or Unicode spaces unquoted.
 
 Still open (owner's call or v0.2): `args_digest` and `bindings_digest` are unkeyed SHA-256, so guessable values (post IDs) can be found by trying candidates (now stated in docs/flight.md; an HMAC with a stored key would fix it); requests rejected before matching (such as `_method` overrides) are not recorded anywhere; a database row with a malformed hash makes verify fail closed without naming the entry. CI now prints failing test output as error annotations.
+
+## In progress: flight recorder case studies
+
+Started 2026-10-31 by Claude. Owner asked for case studies and use examples of the flight recorder, built from real runs. Rules: only new files in this repo (no recorder code changes); runs are local only (released binary from releases/latest plus a local stub upstream, or the Docker demo), never a real WordPress site or third-party service.
+
+Plan:
+
+1. [ ] `test/results/case-studies/flight/run.sh`: downloads the latest release binary, starts a local stub upstream and `tokening serve`, runs each scenario and writes its commands and output to files in that folder. Rerun with `sh test/results/case-studies/flight/run.sh`.
+2. [ ] Scenarios: single-use publish grant with replay; a row edited and a row deleted in SQLite, caught by verify; a saved head catching a full chain rebuild; an export of one agent's actions for a reviewer; the use-example recipes (head on a schedule, verify in CI, export by agent and time, replay after an incident, what the log never stores).
+3. [ ] Site (photozeitgeist/tokening.net): two or three "case studies" posts and one "use cases" post, numbers copied only from the recorded files; linked from the 0.1.2 flight recorder post.
+4. [ ] Done entry here and in `TODO.md`.
+
+Any real bug found goes under "Found during case studies" below, not fixed here.

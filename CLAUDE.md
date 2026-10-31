@@ -18,3 +18,13 @@ Shipped 2026-10-31 as v0.1.2 (release run 41189145735, CI run 41188972690, tag o
 **Status.** Measured in the release's test-results.json on Linux, macOS and all five native release platforms: 208 of 208 tamper cases caught (every edit, deletion, adjacent swap and truncation of a 42-entry log, plus truncations with the counter reset, caught with a saved head); 800 entries from 8 connections and 400 from 4 processes, chain intact, every request next to its decision; 20 of 20 kill-mid-write rounds verified. The archive smoke check runs `flight verify` and `flight replay`. The review was a second pass by Claude (`docs/review-v0.1.2.md`), since no separate agent could be started; a review by ChatGPT/Codex is welcome. Site post: https://tokening.net/tokening-0.1.2-adds-a-flight-recorder-for-ai-agent-actions/
 
 **Next.** Optional admin API route for flight export (remote operators currently need file access to the database); the three v0.1.2 wording/test follow-ups in `TODO.md`; then the plan's v0.2 milestone, agreed with the owner first. CI prints the consumer-race and flight summaries as notice annotations, because job log and artifact hosts are blocked from cloud sessions.
+
+## In progress: independent review of flight recorder
+
+Started 2026-10-31 by Claude (independent reviewer, did not write the v0.1.2 code). Scope: `internal/flight`, `internal/store/flight.go`, `cmd/tokening/flight.go`, every place the gateway writes flight entries (grant issue/revoke, MCP and REST calls, decisions, upstream results), `docs/flight.md`, the release workflow's flight checks.
+
+What gets checked: canonical encoding of hashed fields (boundaries, unicode, numbers, ordering); actions that skip logging (error paths, early returns, panics, denied, revoked or expired grants, upstream timeouts); transaction boundaries; races between reading the previous hash and inserting; verify accepting a forged chain (head, `--partial`, sequence gaps, AUTOINCREMENT); secrets in arg names, errors or upstream results; export filters; control characters in replay/export; large or malformed input.
+
+Method: a failing test first for each suspected bug, then the fix. Database tests run only in CI (proxy.golang.org and modernc.org are unreachable from cloud sessions); results are read from check-run annotations.
+
+Resume: read the latest commits on main and the findings list in `docs/review-v0.1.3.md` (created as findings are confirmed).

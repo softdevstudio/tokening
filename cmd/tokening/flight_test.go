@@ -193,3 +193,27 @@ func TestFlightCLIUsageErrors(t *testing.T) {
 		t.Fatalf("empty verify: %d %s", code, out)
 	}
 }
+
+// Review v0.1.3: replay --file used to end with "Chain intact" even when
+// entries had been cut out of the file. A file with gaps must say so.
+func TestFlightReplayFileWithGapsIsNotCalledIntact(t *testing.T) {
+	db, _ := flightDB(t)
+	_, export, _ := flightRun("export", "--db", db)
+	lines := strings.SplitAfter(export, "\n")
+	deleted := strings.Join(append(append([]string{}, lines[:2]...), lines[3:]...), "")
+	path := filepath.Join(t.TempDir(), "deleted.jsonl")
+	if err := os.WriteFile(path, []byte(deleted), 0600); err != nil {
+		t.Fatal(err)
+	}
+	code, out, _ := flightRun("replay", "--file", path)
+	if strings.Contains(out, "Chain intact") || !strings.Contains(out, "missing from this file") {
+		t.Fatalf("replay of a file with a removed entry: %d\n%s", code, out)
+	}
+	whole := filepath.Join(t.TempDir(), "whole.jsonl")
+	if err := os.WriteFile(whole, []byte(export), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, _ = flightRun("replay", "--file", whole); code != 0 || !strings.Contains(out, "Chain intact through entry 7.") {
+		t.Fatalf("whole file: %d\n%s", code, out)
+	}
+}

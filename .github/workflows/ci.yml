@@ -42,6 +42,29 @@ jobs:
             echo "::error::Checks failed. Read the check log artifact for the full command output."
             exit 1
           fi
+      - name: Show failing tests
+        if: failure()
+        shell: bash
+        run: |
+          # Failing test output as annotations, for sessions that cannot reach
+          # the log or artifact hosts.
+          python3 - <<'PY'
+          import json, os
+          path = 'test/results/local/tests.jsonl'
+          if os.path.exists(path):
+              out = {}
+              for line in open(path, encoding='utf-8'):
+                  try:
+                      ev = json.loads(line)
+                  except ValueError:
+                      continue
+                  key = (ev.get('Package', ''), ev.get('Test', ''))
+                  if ev.get('Action') == 'output':
+                      out.setdefault(key, []).append(ev.get('Output', ''))
+                  elif ev.get('Action') == 'fail' and ev.get('Test'):
+                      text = ''.join(out.get(key, []))[-1500:].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+                      print('::error title=' + key[1] + '::' + text)
+          PY
       - name: Show measured failure-test results
         shell: bash
         run: |

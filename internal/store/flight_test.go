@@ -575,3 +575,31 @@ func TestFlightRecorderEvidence(t *testing.T) {
 	}
 	fmt.Println(string(data))
 }
+
+// Review v0.1.3: the tool name and argument names come from the agent. A tool
+// name of 300,000 U+2028 characters fits in a 1 MiB request but doubles when
+// JSON-escaped, so the request entry used to be longer than the 1 MiB line
+// limit and the export could no longer be verified or replayed from a file.
+func TestFlightOversizedAgentInputStillExportsVerifiably(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, filepath.Join(t.TempDir(), "db"))
+	applyTestPolicy(t, s)
+	g := issue(t, s, issueRequest())
+	call := consumerCall()
+	call.Tool = strings.Repeat(" ", 300000)
+	call.Args = map[string]json.RawMessage{}
+	for i := 0; i < 20000; i++ {
+		call.Args[fmt.Sprintf("n %06d", i)] = json.RawMessage(`0`)
+	}
+	if _, err := s.Consume(ctx, string(g.Secret), call); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if _, err := s.ExportFlight(ctx, &buf, flight.Filter{}); err != nil {
+		t.Fatal(err)
+	}
+	r, err := flight.VerifyReader(&buf, flight.Options{})
+	if err != nil || !r.OK || r.Entries != 3 {
+		t.Fatalf("export of an oversized request does not verify: %+v %v", r, err)
+	}
+}

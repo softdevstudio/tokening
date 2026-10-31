@@ -63,6 +63,18 @@ Each line of a file must be exactly what `export` writes, byte for byte. A line 
 
 `head` prints the last entry as `SEQ:HASH`. Save it somewhere the database's owner cannot rewrite: a ticket, a commit, a message to a colleague, a printout. Later, `verify --head SEQ:HASH` proves that entry is still in the chain with the same hash.
 
+A `--head` that is given must be a valid `SEQ:HASH`. An empty or malformed value is a usage error (exit 2), checked before the database or file is opened, so a script passing the last line of an empty heads file fails instead of skipping the check. Before 0.1.4 an empty `--head ""` was read as no head and verify exited 0.
+
+When the chain does not match the saved head, verify says so and does not call the earlier entries good. They still link to each other, but a chain rebuilt from scratch does too:
+
+```
+Broken at entry 20: entry 20 has a different hash from the saved head: the log was rewritten from entry 20 or earlier.
+The chain does not match the saved head.
+Entries 1 to 19 link to each other, but so would a rebuilt chain. Entries after the last point that matches a saved head cannot be trusted; check an earlier saved head to find that point.
+```
+
+A log that ends before the saved head reads "the saved head is entry 20 but the log ends at entry 18: entries were removed, or the chain was rebuilt shorter". From the database alone, a cut-off log and a chain rebuilt without some entries in the middle look the same, so verify does not say where the entries went.
+
 `replay` prints the matching entries in order as a readable timeline, then whether the chain is intact. It checks the full chain first, so a broken log is flagged even when the filter shows only one agent. With `--file`, entries missing from the file can be a filter or a removal, so the last line says how many are missing instead of calling the chain intact. Names, tool names and paths that hold spaces, quotes or control characters are printed quoted:
 
 ```
@@ -85,7 +97,7 @@ An exported line:
 
 The chain shows that nothing was edited, removed or reordered since the entries were written, as far as the entries themselves go. SQLite triggers also refuse updates and deletes during normal operation.
 
-The table uses SQLite's AUTOINCREMENT counter, which remembers the largest seq ever assigned. Entries removed from the end of the database log leave that counter ahead of the last entry, and `verify` reports it. Any later append continues after the counter, so the gap stays in the chain.
+The table uses SQLite's AUTOINCREMENT counter, which remembers the largest seq ever assigned. A log that ends before that counter has lost entries, and `verify` reports it as "entries were removed, or the chain was rebuilt shorter", since the counter alone cannot show where they went. Any later append continues after the counter, so the gap stays in the chain.
 
 A hash chain cannot stop someone who can write to the database file from rebuilding the whole chain from the first changed entry onward, and resetting the counter as well. A saved head catches that: the rebuilt chain will not contain the saved hash. Save a head at the points that matter to you, such as the end of each working day, after a sensitive grant, or before handing the database to someone else. A head proves everything up to it. Entries written after the last saved head are protected only by the chain and the counter.
 

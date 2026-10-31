@@ -20,17 +20,17 @@ class ReleaseGuardTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)
             subprocess.run(['git', 'init', '-q'], cwd=root, check=True)
-            (root / 'cmd/tokening').mkdir(parents=True)
-            source = root / 'cmd/tokening/main.go'
-            source.write_text('package main\nconst version = "0.1.0"\n')
-            subprocess.run(['git', 'add', 'cmd'], cwd=root, check=True)
+            (root / 'internal/version').mkdir(parents=True)
+            source = root / 'internal/version/version.go'
+            source.write_text('package version\nconst Version = "0.1.0"\n')
+            subprocess.run(['git', 'add', 'internal'], cwd=root, check=True)
             record = root / 'release-readiness.json'
             record.write_text(json.dumps({'version':'0.1.0','status':'approved','source_sha256':release.source_digest(root)}))
             release.check_review(root)
             source.write_text(source.read_text() + '// changed source\n')
             with self.assertRaises(RuntimeError):
                 release.check_review(root)
-            source.write_text('package main\nconst version = "0.1.0"\n')
+            source.write_text('package version\nconst Version = "0.1.0"\n')
             record.write_text(json.dumps({'version':'0.1.0','status':'pending','source_sha256':release.source_digest(root)}))
             with self.assertRaises(RuntimeError):
                 release.check_review(root)

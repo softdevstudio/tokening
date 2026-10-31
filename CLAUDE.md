@@ -45,4 +45,4 @@ Started 2026-10-31 by Claude (owner request). A small fix release from the case 
 4. Version 0.1.4, CHANGELOG, review record, release-readiness.json; the release workflow publishes after green CI. Then check the release files, SHA256SUMS, latest/download and the downloaded binary once.
 5. Rerun the case studies on 0.1.4 and update the site (badge, Download, posts quoting the changed messages).
 
-Status: plan pushed.
+Status: failing tests pushed (f653b89, d9c7c94; CI showed them failing). Fixes, review (docs/review-v0.1.4.md) and version 0.1.4 pushed; waiting for CI and the release workflow.

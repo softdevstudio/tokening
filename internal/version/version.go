@@ -4,4 +4,4 @@
 package version
 
 // Version is raised for each release. scripts/release.py reads this line.
-const Version = "0.1.3"
+const Version = "0.1.4"

@@ -229,13 +229,22 @@ type Problem struct {
 
 // Report is the result of a verification.
 type Report struct {
-	OK        bool     `json:"ok"`
-	Entries   int      `json:"entries"`
-	FirstSeq  uint64   `json:"first_seq"`
-	LastSeq   uint64   `json:"last_seq"`
-	LastHash  string   `json:"last_hash"`
-	Gaps      int      `json:"gaps"`
-	HeadFound bool     `json:"head_found"`
+	OK        bool   `json:"ok"`
+	Entries   int    `json:"entries"`
+	FirstSeq  uint64 `json:"first_seq"`
+	LastSeq   uint64 `json:"last_seq"`
+	LastHash  string `json:"last_hash"`
+	Gaps      int    `json:"gaps"`
+	HeadFound bool   `json:"head_found"`
+	// HeadMismatch is set when the chain does not match a saved head: the
+	// entry at the head's seq has another hash, or the log is shorter. The
+	// entries before the problem still link to each other, but a rebuilt chain
+	// does too, so none of them is confirmed by the head.
+	HeadMismatch bool `json:"head_mismatch,omitempty"`
+	// Shortened is set when the database counter shows more entries were
+	// assigned than the log holds. Entries were removed, or the chain was
+	// rebuilt shorter; the counter cannot tell which, or where.
+	Shortened bool     `json:"shortened,omitempty"`
 	Problem   *Problem `json:"problem,omitempty"`
 }
 
@@ -295,6 +304,7 @@ func (v *Verifier) add(e Entry, line int) bool {
 	}
 	if h := v.opts.Head; h != nil && h.Seq == e.Seq {
 		if h.Hash != e.Hash {
+			v.report.HeadMismatch = true
 			return fail(e.Seq, "entry %d has a different hash from the saved head: the log was rewritten from entry %d or earlier", e.Seq, e.Seq)
 		}
 		v.report.HeadFound = true
@@ -307,15 +317,24 @@ func (v *Verifier) add(e Entry, line int) bool {
 	return true
 }
 
+// shorterReason is the wording for a log that ends before a point known to
+// exist. Plain truncation and a chain rebuilt without some entries look the
+// same from here, so it does not say where the entries went.
+const shorterReason = "entries were removed, or the chain was rebuilt shorter"
+
 // Finish returns the report. A saved head that was never reached is a problem:
-// entries after the end of the log were removed, or the head belongs to
+// the log is shorter than when the head was saved, or the head belongs to
 // another log.
 func (v *Verifier) Finish() Report {
 	r := v.report
 	if r.Problem == nil {
 		if h := v.opts.Head; h != nil && !r.HeadFound {
-			if v.last == nil || h.Seq > v.last.Seq {
-				r.Problem = &Problem{Reason: fmt.Sprintf("the saved head is entry %d but the log ends at entry %d: entries were removed from the end", h.Seq, r.LastSeq)}
+			if v.last == nil {
+				r.HeadMismatch = true
+				r.Problem = &Problem{Reason: fmt.Sprintf("the saved head is entry %d but the log is empty: %s", h.Seq, shorterReason)}
+			} else if h.Seq > v.last.Seq {
+				r.HeadMismatch = true
+				r.Problem = &Problem{Reason: fmt.Sprintf("the saved head is entry %d but the log ends at entry %d: %s", h.Seq, r.LastSeq, shorterReason)}
 			} else {
 				r.Problem = &Problem{Reason: fmt.Sprintf("the saved head, entry %d, is not in this export", h.Seq)}
 			}
@@ -325,11 +344,16 @@ func (v *Verifier) Finish() Report {
 	return r
 }
 
-// Fail records a problem found outside the chain itself, such as a database
-// counter showing that entries were removed from the end.
-func (v *Verifier) Fail(seq uint64, reason string) {
+// Shorter records that the database assigned entries up to assigned but the
+// log ends at last. It does nothing if a problem was already found.
+func (v *Verifier) Shorter(assigned, last uint64) {
 	if !v.stopped {
-		v.report.Problem = &Problem{Seq: seq, Reason: reason}
+		v.report.Problem = &Problem{Seq: assigned, Reason: fmt.Sprintf("the database assigned entries up to %d but the log ends at entry %d: %s", assigned, last, shorterReason)}
+		v.report.Shortened = true
+		// A saved head past the end of the log is not in it either.
+		if h := v.opts.Head; h != nil && !v.report.HeadFound && h.Seq > last {
+			v.report.HeadMismatch = true
+		}
 		v.stopped = true
 	}
 }

@@ -60,11 +60,30 @@ func flightCommand(args []string, out, errOut io.Writer) int {
 	if flags.Parse(args[1:]) != nil || flags.NArg() != 0 {
 		return 2
 	}
-	dbSet := false
-	flags.Visit(func(f *flag.Flag) { dbSet = dbSet || f.Name == "db" })
+	dbSet, headSet := false, false
+	flags.Visit(func(f *flag.Flag) {
+		dbSet = dbSet || f.Name == "db"
+		headSet = headSet || f.Name == "head"
+	})
 	if file != nil && *file != "" && dbSet {
 		fmt.Fprintln(errOut, "Use --db or --file, not both.")
 		return 2
+	}
+	// A --head that was given is always checked, before anything is opened. An
+	// empty value is refused rather than read as "no head": a script passing
+	// the last line of an empty heads file must not pass unchecked.
+	var anchor *flight.Anchor
+	if headSet {
+		if strings.TrimSpace(*head) == "" {
+			fmt.Fprintln(errOut, "--head is empty. Give SEQ:HASH as printed by tokening flight head, or leave --head out. If it came from a file of saved heads, that file is empty or its last line is blank.")
+			return 2
+		}
+		a, err := flight.ParseAnchor(*head)
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 2
+		}
+		anchor = &a
 	}
 	var filter flight.Filter
 	if agent != nil {
@@ -87,15 +106,6 @@ func flightCommand(args []string, out, errOut io.Writer) int {
 	if file != nil && *file != "" {
 		switch args[0] {
 		case "verify":
-			var anchor *flight.Anchor
-			if *head != "" {
-				a, err := flight.ParseAnchor(*head)
-				if err != nil {
-					fmt.Fprintln(errOut, err)
-					return 2
-				}
-				anchor = &a
-			}
 			return withInput(*file, errOut, func(r io.Reader) int {
 				report, err := flight.VerifyReader(r, flight.Options{Partial: *partial, Head: anchor})
 				if err != nil {
@@ -132,15 +142,6 @@ func flightCommand(args []string, out, errOut io.Writer) int {
 		fmt.Fprintln(out, anchor.String())
 		return 0
 	case "verify":
-		var anchor *flight.Anchor
-		if *head != "" {
-			a, err := flight.ParseAnchor(*head)
-			if err != nil {
-				fmt.Fprintln(errOut, err)
-				return 2
-			}
-			anchor = &a
-		}
 		report, err := s.VerifyFlight(ctx, flight.Options{Head: anchor})
 		if err != nil {
 			fmt.Fprintln(errOut, "flight:", err)
@@ -203,9 +204,19 @@ func printReport(out io.Writer, r flight.Report) int {
 	} else {
 		fmt.Fprintf(out, "Broken: %s.\n", r.Problem.Reason)
 	}
-	if r.Entries > 0 {
+	switch {
+	case r.HeadMismatch:
+		// The entries before the problem link to each other, but a chain rebuilt
+		// from scratch does too. Only a matching saved head confirms entries.
+		fmt.Fprintln(out, "The chain does not match the saved head.")
+		if r.Entries > 0 {
+			fmt.Fprintf(out, "Entries %d to %d link to each other, but so would a rebuilt chain. Entries after the last point that matches a saved head cannot be trusted; check an earlier saved head to find that point.\n", r.FirstSeq, r.LastSeq)
+		}
+	case r.Shortened:
+		fmt.Fprintf(out, "Entries %d to %d link to each other, but so would a rebuilt chain. Check them against a head saved earlier before trusting them.\n", r.FirstSeq, r.LastSeq)
+	case r.Entries > 0:
 		fmt.Fprintf(out, "Entries %d to %d verify. Last good head: %d:%s\n", r.FirstSeq, r.LastSeq, r.LastSeq, r.LastHash)
-	} else {
+	default:
 		fmt.Fprintln(out, "No entry before it verifies.")
 	}
 	return 1

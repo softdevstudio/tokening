@@ -68,7 +68,7 @@ These exist because past projects lost hours to retry loops. Follow them strictl
 
 ## Releases (automated, owner never involved)
 
-1. Raise the version in the code on main (a `version` constant).
+1. Raise the version on main: `Version` in `internal/version/version.go`, the only place it is written (the binary, MCP serverInfo and the release script read it from there).
 2. When CI finishes green on that commit, the release workflow (triggered by the finished CI run) sees a version with no tag yet.
 3. It builds Linux, macOS and Windows binaries, smoke-tests them, then tags `vX.Y.Z` and creates the release "Tokening vX.Y.Z" (not a pre-release) with binaries, `SHA256SUMS` and notes.
 4. Archive names carry no version, so `releases/latest/download/...` links on the site stay valid.
@@ -146,4 +146,4 @@ Started 2026-10-31 by Claude (owner request). A small fix release from the case 
 4. Version 0.1.4, CHANGELOG, review record, release-readiness.json; the release workflow publishes after green CI. Then check the release files, SHA256SUMS, latest/download and the downloaded binary once.
 5. Rerun the case studies on 0.1.4 and update the site (badge, Download, posts quoting the changed messages).
 
-Status: plan pushed.
+Status: failing tests pushed (f653b89, d9c7c94; CI showed them failing). Fixes, review (docs/review-v0.1.4.md) and version 0.1.4 pushed; waiting for CI and the release workflow.

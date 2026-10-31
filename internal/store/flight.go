@@ -209,7 +209,7 @@ func (s *Store) readFlight(ctx context.Context, filter flight.Filter, after, upp
 
 // VerifyFlight checks the whole chain in the database. Besides the chain, it
 // compares the last entry with the largest seq SQLite ever assigned: a higher
-// counter means entries were removed from the end.
+// counter means entries were removed, or the chain was rebuilt shorter.
 func (s *Store) VerifyFlight(ctx context.Context, opts flight.Options) (flight.Report, error) {
 	opts.Partial = false
 	var counter, upper int64
@@ -233,7 +233,7 @@ func (s *Store) VerifyFlight(ctx context.Context, opts flight.Options) (flight.R
 		return flight.Report{}, err
 	}
 	if err == nil && counter > upper {
-		v.Fail(uint64(counter), fmt.Sprintf("the database assigned entries up to %d but the log ends at entry %d: entries were removed from the end", counter, upper))
+		v.Shorter(uint64(counter), uint64(upper))
 	}
 	return v.Finish(), nil
 }

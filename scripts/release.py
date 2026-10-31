@@ -31,7 +31,7 @@ def command(args, **kwargs):
 
 
 def version(root=ROOT):
-    match = re.search(r'^const version = "(\d+\.\d+\.\d+)"$', (root / 'cmd/tokening/main.go').read_text(encoding='utf-8'), re.M)
+    match = re.search(r'^const Version = "(\d+\.\d+\.\d+)"$', (root / 'internal/version/version.go').read_text(encoding='utf-8'), re.M)
     if not match:
         raise RuntimeError('A plain semantic version constant is needed')
     return match[1]

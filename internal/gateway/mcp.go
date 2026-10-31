@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/softdevstudio/tokening/internal/matcher"
+	"github.com/softdevstudio/tokening/internal/version"
 )
 
 const mcpVersion = "2025-06-18"
@@ -57,8 +58,8 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 		writeError(w, 406, "invalid_request", "Accept must include application/json and text/event-stream.")
 		return
 	}
-	version := r.Header.Get("MCP-Protocol-Version")
-	if version != "" && version != mcpVersion && version != "2025-03-26" {
+	protocol := r.Header.Get("MCP-Protocol-Version")
+	if protocol != "" && protocol != mcpVersion && protocol != "2025-03-26" {
 		writeError(w, 400, "invalid_request", "Unsupported MCP protocol version.")
 		return
 	}
@@ -124,7 +125,7 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 	}
 	switch method {
 	case "initialize":
-		rpc(w, id, map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{"tools": map[string]any{}}, "serverInfo": map[string]string{"name": "tokening", "version": "0.1.1"}}, 0, "")
+		rpc(w, id, map[string]any{"protocolVersion": mcpVersion, "capabilities": map[string]any{"tools": map[string]any{}}, "serverInfo": map[string]string{"name": "tokening", "version": version.Version}}, 0, "")
 	case "ping":
 		rpc(w, id, map[string]any{}, 0, "")
 	case "tools/list":
@@ -323,7 +324,7 @@ func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[str
 		}
 		return fields["result"], res.StatusCode, nil
 	}
-	init, status, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": "0.1.1"}}, 1)
+	init, status, err := send("initialize", map[string]any{"protocolVersion": upstreamVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "tokening", "version": version.Version}}, 1)
 	if err != nil {
 		return nil, status, err
 	}

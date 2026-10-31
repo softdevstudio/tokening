@@ -93,4 +93,15 @@ func TestShorterThanCounterIsNeutral(t *testing.T) {
 	if r := v.Finish(); r.Shortened || r.Problem.Seq != 4 {
 		t.Fatalf("counter overrode the first problem: %+v", r.Problem)
 	}
+
+	// With a saved head past the end, the head problem is reported too.
+	head := Anchor{Seq: 20, Hash: [sha256.Size]byte{1}}
+	v = NewVerifier(Options{Head: &head})
+	for _, e := range base {
+		v.Add(e)
+	}
+	v.Shorter(20, 17)
+	if r := v.Finish(); !r.Shortened || !r.HeadMismatch {
+		t.Fatalf("counter and head: %+v", r)
+	}
 }

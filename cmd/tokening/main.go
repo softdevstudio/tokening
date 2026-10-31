@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/softdevstudio/tokening/internal/vault"
 	"io"
 	"os"
 
 	"github.com/softdevstudio/tokening/internal/policy"
+	"github.com/softdevstudio/tokening/internal/vault"
+	buildversion "github.com/softdevstudio/tokening/internal/version"
 )
 
-const version = "0.1.3"
+// version comes from internal/version, the one place it is written.
+const version = buildversion.Version
 
 func run(args []string, out, errOut io.Writer) int {
 	if len(args) > 0 {

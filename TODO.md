@@ -63,7 +63,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Hash-chained flight log, `tokening flight verify|export|replay|head`, tests, docs, release v0.1.2, site post (owner request, 2026-10-31). Details in the "Flight recorder (v0.1.2): done" section of `AGENTS.md`.
 - [x] Independent review of the flight recorder, four fixes, v0.1.3 (2026-10-31, `docs/review-v0.1.3.md`)
 - [ ] Optional: admin API route for flight export
-- [ ] Decide with the owner: keyed (HMAC) digests for args and bindings
+- [x] Keyed (HMAC) digests for args and bindings: no, they stay plain SHA-256 as documented in docs/flight.md (owner, 2026-10-31)
 
 ## v0.1.2 follow-ups (from the v0.1.1 review, none blocking)
 
@@ -71,9 +71,16 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [ ] Cover the "does not allow any query parameter" wording with a REST grant test
 - [ ] Cover the replay's 8-argument cap and sorted order in the panel test
 
+## Case study follow-ups
+
+- [ ] `flight verify --head ""` should be a usage error (exit 2), not a silent skip with exit 0
+- [ ] After a saved-head mismatch, don't call rewritten entries verified; describe a shorter rebuilt chain without saying entries were removed from the end
+
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-31, Claude.** Flight recorder case studies from real runs of the v0.1.3 release binary in front of a local stub MCP CMS (Docker demo not used: Go module downloads are blocked here). Added `test/results/case-studies/flight/` (run.sh, run.py, policy, five transcripts, summary.json, a sample export). Site: three case study posts, one use cases post, links from the flight recorder post, whose title lost its version (URL now /tokening-adds-a-flight-recorder-for-ai-agent-actions/; Download and Quick start links updated). Found, not fixed: `verify --head ""` skips the head check and exits 0; misleading wording after a saved-head mismatch (see AGENTS.md). Owner decision recorded: digests stay plain SHA-256. Next: fix the empty-head case (usage error), then the existing follow-ups.
 
 - **2026-10-31, Claude (independent reviewer).** Reviewed the v0.1.2 flight recorder without relying on the earlier self-review. Four bugs confirmed with failing tests first (pushed in 13610ef, output read from CI annotations): non-canonical JSONL lines verified, replay --file called a file with removed entries intact, agent input could push a request entry past the 1 MiB line limit, replay left tool names with spaces unquoted. Fixed in 3cb8a3c and released as v0.1.3 by the release workflow; assets, SHA256SUMS, latest/download links and the downloaded Linux binary checked. CI prints failing tests as annotations. Site: badge, Download, Reference, two posts' release wording and the evidence file. Open: unkeyed digests (docs say so), pre-match rejections not recorded, see docs/review-v0.1.3.md.
 

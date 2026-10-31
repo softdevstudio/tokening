@@ -2,7 +2,7 @@
 
 Tokening grants a permission. The flight recorder keeps a record of what was done with it, in a form where changes show.
 
-Every action that passes through the gateway adds entries to an append-only log in the Tokening database: the grant being issued or revoked, each request an agent sends, the decision on that request, and the upstream result of an allowed call. Each entry carries the SHA-256 hash of the entry before it. Change one entry, delete one, move one or cut entries off the end, and `tokening flight verify` says which entry is broken and why.
+Every grant change and every call that passes through the gateway adds entries to an append-only log in the Tokening database: the grant being issued or revoked, each request an agent sends, the decision on that request, and the upstream result of an allowed call. Each entry carries the SHA-256 hash of the entry before it. Change one entry, delete one, move one or cut entries off the end, and `tokening flight verify` says which entry is broken and why.
 
 The recorder needs no setup. A database created or upgraded by Tokening v0.1.2 records from that moment on. History from before the upgrade stays in the decisions table and is not part of the chain.
 
@@ -17,6 +17,8 @@ The recorder needs no setup. A database created or upgraded by Tokening v0.1.2 r
 | `result` | An allowed call finishes | `decision_id`, `authorization_id`, code, upstream HTTP status (or null when no answer came back) and latency |
 
 Every entry also has `seq`, `at` (UTC, milliseconds), `kind`, `agent` (the grant's `issued_to`, empty for unknown tokens), `grant` (empty for unknown tokens), `prev` and `hash`.
+
+A request here means an MCP `tools/call` or a REST call, the same calls that get a row in the decisions table. MCP `initialize`, `tools/list`, `ping` and `GET /grant` read the grant without spending anything and are not recorded. Neither are requests turned away before matching because they are malformed, too large or encoded. If the database fails after an allowed call was forwarded, the result entry can be missing; the decision entry stands and the server logs the failure.
 
 Entries never hold credentials, bearer secrets, bearer hashes or argument values. A request lists argument names only. The digest is the same one the decisions table stores, so an operator who still has the original call can show that it matches. Reasons follow the refusal rules: numbers can appear, string values never do. The grant's `reason` text is the operator's own note from `grant issue`.
 
@@ -34,7 +36,7 @@ Entry `n` stores `hash(n)` and `prev`, which must equal `hash(n-1)`. Entry 1 has
 
 ## Crashes and concurrent writers
 
-Entries are written inside the same SQLite transaction as the change they describe. An allowed call's use, its decision row and its request and decision entries commit together or not at all. If the process dies mid-write, the transaction rolls back and the log ends at its last complete entry, which still verifies. If an entry cannot be written, the call is refused with an error and no use is spent.
+Entries are written inside the same SQLite transaction as the change they describe. An allowed call's use, its decision row and its request and decision entries commit together or not at all. If the process dies mid-write, the transaction rolls back and the log ends at its last complete entry, which still verifies. If an entry cannot be written, the whole transaction fails: the agent gets a storage error, no use is spent and nothing is forwarded.
 
 Every write transaction takes SQLite's write lock before it reads anything. The append reads the previous hash and inserts the next entry while holding that lock, so two writers, in one process or in several processes sharing the database file, can never both link to the same entry. A request and its decision are always next to each other.
 

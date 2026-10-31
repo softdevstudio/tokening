@@ -356,3 +356,14 @@ func TestFormatEntry(t *testing.T) {
 		t.Fatal(unknown)
 	}
 }
+
+func TestFormatEntryQuotesControlCharacters(t *testing.T) {
+	body, _ := NewBody(GrantBody{Event: "issued", Template: "edit", Action: "wp_update_post", Uses: 1, IssuedBy: "op\x1b[2K", Reason: "line\n#99 fake", Bound: []string{"id\nx"}})
+	line := FormatEntry(Entry{Seq: 1, Kind: KindGrant, Agent: "bot\n#2  2026-10-31T00:00:00.000Z  decision  forged", Grant: "g_1", Body: body})
+	if strings.ContainsAny(line, "\n\x1b") {
+		t.Fatalf("control characters reached the replay: %q", line)
+	}
+	if !strings.Contains(line, `"bot\n#2`) || !strings.Contains(line, `"op\x1b[2K"`) {
+		t.Fatalf("names not quoted: %s", line)
+	}
+}

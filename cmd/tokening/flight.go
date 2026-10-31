@@ -23,11 +23,12 @@ const flightUsage = `Usage:
 Times are RFC 3339 (2026-10-31T10:00:00Z) or a UTC date (2026-10-31). --since is inclusive, --until is not.`
 
 func flightCommand(args []string, out, errOut io.Writer) int {
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+	if len(args) == 0 {
+		fmt.Fprintln(errOut, flightUsage)
+		return 2
+	}
+	if args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
 		fmt.Fprintln(out, flightUsage)
-		if len(args) == 0 {
-			return 2
-		}
 		return 0
 	}
 	flags := flag.NewFlagSet("flight "+args[0], flag.ContinueOnError)

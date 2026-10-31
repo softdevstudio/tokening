@@ -58,6 +58,10 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo replay on the home page; footer "A SoftDevStudio.com project"
 - [x] Add Tokening to softdevstudio.com
 
+## v0.1.2: flight recorder (in progress)
+
+Owner request, 2026-10-31. The design, step list and resume point are in the "In progress: flight recorder" section of `AGENTS.md` (mirrored in `CLAUDE.md`).
+
 ## v0.1.2 follow-ups (from the v0.1.1 review, none blocking)
 
 - [ ] Right method with an unsafe path reads "call used PATCH"; say it used a path the grant does not allow

@@ -4,7 +4,7 @@ Current state, next tasks, and the session log. Both assistants read this at the
 
 ## Status
 
-Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Independent review fixes and automated release packaging are implemented. The release workflow requires fresh green CI and all native archive checks before publication. v0.1.0 is published at https://github.com/softdevstudio/tokening/releases/tag/v0.1.0. All five native targets passed tests and extracted-archive smoke checks. Public latest downloads, SHA256 checks and the downloaded Linux binary were verified. The Hugo website content and studio listing are published. The original Launch theme, layouts and CSS are unchanged. See the session log for deployment checks.
+Foundation added: Go command scaffold, license notices, build targets and Linux/macOS CI. Policy loading and validation are implemented. SQLite storage, WAL mode and atomic schema migrations are implemented. The pure permission matcher is implemented. Atomic consumption and the 1,000-run race test are implemented. The credential vault is implemented. Internal grant issuing, inspection and revocation are implemented. Internal audit queries and JSONL export are implemented. The internal REST gateway, credential injection and grant self-description are implemented. The internal MCP HTTP adapter is implemented. The running server, separate admin API and operator CLI are implemented. The disposable Docker WordPress stack and deterministic agent are implemented, with a CI job and JSON replay export. The read-only admin panel, standalone HTML replay and browser CI checks are implemented. Independent review fixes and automated release packaging are implemented. The release workflow requires fresh green CI and all native archive checks before publication. v0.1.0 is published at https://github.com/softdevstudio/tokening/releases/tag/v0.1.0. All five native targets passed tests and extracted-archive smoke checks. Public latest downloads, SHA256 checks and the downloaded Linux binary were verified. The Hugo website content and studio listing are published. v0.1.2 adds the flight recorder. The original Launch theme, layouts and CSS are unchanged. See the session log for deployment checks.
 
 ## Open questions for the owner
 
@@ -58,9 +58,10 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo replay on the home page; footer "A SoftDevStudio.com project"
 - [x] Add Tokening to softdevstudio.com
 
-## v0.1.2: flight recorder (in progress)
+## v0.1.2: flight recorder (shipped)
 
-Owner request, 2026-10-31. The design, step list and resume point are in the "In progress: flight recorder" section of `AGENTS.md` (mirrored in `CLAUDE.md`).
+- [x] Hash-chained flight log, `tokening flight verify|export|replay|head`, tests, docs, release v0.1.2, site post (owner request, 2026-10-31). Details in the "Flight recorder (v0.1.2): done" section of `AGENTS.md`.
+- [ ] Optional: admin API route for flight export
 
 ## v0.1.2 follow-ups (from the v0.1.1 review, none blocking)
 
@@ -71,6 +72,8 @@ Owner request, 2026-10-31. The design, step list and resume point are in the "In
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-31, Claude.** Owner asked for an agent flight recorder. Planned it in AGENTS.md/CLAUDE.md first, then built `internal/flight` (hash, JSONL, verifier, replay text), migration 004 with appends in grant issue/revoke, consume and upstream completion, and `tokening flight verify|export|replay|head`. Release evidence now requires the flight tests and their summary; the archive smoke check verifies and replays a flight log; CI shows the measured summaries as annotations (log hosts are blocked from cloud sessions). Second-pass review fixed replay quoting of control characters, usage output and docs coverage. v0.1.2 published by the release workflow; latest/download links, SHA256SUMS and a downloaded Linux binary checked. Site: new post, Download, Quick start, Reference, hero badge and test-results.json updated. Local note: modernc.org and proxy.golang.org are unreachable from this sandbox, so database tests ran only in CI. Next: optional admin export route, the v0.1.2 follow-ups below, then v0.2 with the owner.
 
 - **2026-10-26, Claude.** Owner asked to review and rewrite the website. Refusal reasons now name what the grant allows and what the call did (numbers shown, strings never). The replay is step-by-step with captions, the agent's request per row, the post changing, short IDs and an ?embed mode that sizes its frame; the demo records requests and pre-run posts. Browser check failures were diagnosed by surfacing the log tail as one annotation (artifact and log hosts are blocked from cloud sessions): a step-0 title expectation, then the header overflowing 390px. Independent review: changes requested, fixed, approved (docs/review-v0.1.1.md). Version 0.1.1 marked approved for the automated release. Website rewritten on branch site-rewrite in photozeitgeist/tokening.net (new pages, 12 posts, 6 SVG diagrams); merge after the 0.1.1 replay and evidence are copied in. softdevstudio.com's Tokening note links to four removed post URLs; that repo was not reachable from this session.
 

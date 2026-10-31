@@ -112,31 +112,10 @@ Write like a person, not a brochure.
 - OAuth server or SSO features.
 - High availability.
 
-## In progress: flight recorder (v0.1.2)
+## Flight recorder (v0.1.2): done
 
-Owner request, 2026-10-31. This section is the hand-off: Claude, ChatGPT/Codex or a fresh session must be able to continue from it alone. It is kept identical in `CLAUDE.md` and `AGENTS.md`. When v0.1.2 ships, replace it with a normal done/status/next entry.
+Shipped 2026-10-31 as v0.1.2 (release run 41189145735, CI run 41188972690, tag on 8c81d74). An append-only, hash-chained log of every grant issue and revocation, MCP tool call or REST call, decision and upstream result, written in the same SQLite transaction as the change (table `flight`, schema 4). Commands: `tokening flight verify | export | replay | head`, reading the database read-only. Reference: `docs/flight.md`. Chain logic: `internal/flight`; appends and reads: `internal/store/flight.go`.
 
-**What and why.** An append-only, tamper-evident log of every action that passes through the gateway: the grant (issue, revoke), the request, the decision and the upstream result. Each entry is hash-chained to the one before, so an edit, deletion, reorder or truncation is detectable. Tokening grants the permission; the recorder proves what was done with it. v0.1 is already released (v0.1.1), so this ships as v0.1.2. The plan's v0.2 milestone (stdio targets, grant requests, explain) is unchanged.
+**Status.** Measured in the release's test-results.json on Linux, macOS and all five native release platforms: 208 of 208 tamper cases caught (every edit, deletion, adjacent swap and truncation of a 42-entry log, plus truncations with the counter reset, caught with a saved head); 800 entries from 8 connections and 400 from 4 processes, chain intact, every request next to its decision; 20 of 20 kill-mid-write rounds verified. The archive smoke check runs `flight verify` and `flight replay`. The review was a second pass by Claude (`docs/review-v0.1.2.md`), since no separate agent could be started; a review by ChatGPT/Codex is welcome. Site post: https://tokening.net/tokening-0.1.2-adds-a-flight-recorder-for-ai-agent-actions/
 
-**Design decisions.**
-
-- Storage: new SQLite table `flight` (migration 004), written in the same transaction as the grant change or decision it records. A crash therefore loses nothing that committed and leaves no half entry. Concurrent writers (goroutines or several processes on one database) are serialized by SQLite's immediate write lock, and each append reads the previous hash inside that lock, so the chain cannot fork. UPDATE and DELETE triggers refuse changes, as on `decisions`.
-- Entry fields: `seq` (1, 2, 3 ... no gaps), `at` (UTC, milliseconds), `kind` (`grant`, `request`, `decision`, `result`), `agent`, `grant`, `body` (compact JSON), `prev`, `hash`. No credentials, bearer secrets, bearer hashes or argument plaintext ever enter an entry; requests carry argument names and the same SHA-256 call digest the `decisions` table uses.
-- Hash: SHA-256 over a length-prefixed binary encoding: the domain string `tokening-flight-v1`, seq (uint64 big-endian), at in ms (int64 big-endian), then kind, agent, grant and body each as uint32 length + bytes, then the previous entry's 32-byte hash (32 zero bytes for seq 1). Exported as lowercase hex.
-- Body per kind: grant `{event: issued|revoked, ...}`; request `{target, action, args_digest, args}` (names only); decision `{decision_id, outcome, code, reason, uses_left}`; result `{decision_id, authorization_id, code, upstream_status, latency_ms}`.
-- Limits, stated in the docs: a chain alone cannot stop someone with write access to the database from rewriting the whole chain from the first changed entry onward. `tokening flight head` prints the latest seq and hash so the operator can keep it somewhere else; `verify --head SEQ:HASH` then proves the saved point is still in the chain, which also catches deleted tail entries. History from before the upgrade stays in `decisions` only.
-- Commands, all reading the database file directly (read-only), so they work with or without a running server: `tokening flight verify [--db F | --file F.jsonl] [--head SEQ:HASH] [--partial]`, `tokening flight export [--db F] [--agent A] [--grant G] [--since T] [--until T] [--output F]` (JSONL), `tokening flight replay [same filters]` (readable timeline in order), `tokening flight head [--db F]`. Verify prints the first broken entry and why, and exits 1. A file whose last line is cut off verifies up to the last complete entry and reports the cut-off line (exit 1). `--partial` accepts filtered exports: every entry's own hash is checked, and links are checked where seq numbers are consecutive.
-- Chain logic lives in `internal/flight` (no database or network imports) so it is tested on its own; `internal/store/flight.go` does the appends and reads.
-
-**Steps** (tick and push with the code as each finishes):
-
-- [x] 1. `internal/flight`: entry type, hash, JSONL encode/decode, verifier, replay formatting, with unit tests (edit, delete, reorder, truncate, torn last line, bad head, partial exports)
-- [x] 2. Store: migration 004, append on grant issue/revoke, consume (request + decision) and upstream completion; read, filter and export; tests incl. concurrent writers on separate connections and a process killed mid-write
-- [x] 3. CLI `tokening flight verify|export|replay|head`, tests
-- [x] 4. Recorded results: a `{"flight_recorder": ...}` summary line from the tests, parsed by `scripts/release.py` into `test-results.json`; new required tests listed there
-- [x] 5. Docs: `docs/flight.md`, README section, storage/audit docs, CHANGELOG for v0.1.2
-- [x] 6. Independent review (separate agent or a fresh second pass), fixes, results recorded again; `docs/review-v0.1.2.md`
-- [ ] 7. Version 0.1.2 and approved `release-readiness.json` digest; watch CI and the release; check assets, SHA256SUMS, latest/download links and run a downloaded binary
-- [ ] 8. Site: one post on tokening.net plus Quick start, Download and Reference updates; check the Pages deploy once
-
-**Resume here.** Version 0.1.2 with an approved readiness digest is pushed. Watch that CI run and the Release run it triggers; then check the release assets, SHA256SUMS, releases/latest/download links and run a downloaded binary, and tick step 7. Step 8 (site) follows.
+**Next.** Optional admin API route for flight export (remote operators currently need file access to the database); the three v0.1.2 wording/test follow-ups in `TODO.md`; then the plan's v0.2 milestone, agreed with the owner first. CI prints the consumer-race and flight summaries as notice annotations, because job log and artifact hosts are blocked from cloud sessions.

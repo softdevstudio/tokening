@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/softdevstudio/tokening/internal/flight"
 	"github.com/softdevstudio/tokening/internal/matcher"
 )
 
@@ -135,6 +136,23 @@ func (s *Store) IssueGrant(ctx context.Context, request IssueRequest) (IssuedGra
 		if err != nil {
 			return err
 		}
+		bindings := sha256.Sum256(append(append(argsJSON, '\n'), queryJSON...))
+		bound := flight.SortedNames(args)
+		for _, name := range flight.SortedNames(query) {
+			bound = append(bound, "query "+name)
+		}
+		action := info.Tool
+		if action == "" {
+			action = info.Method + " " + info.Path
+		}
+		err = appendFlight(ctx, tx, flight.KindGrant, request.IssuedTo, id, at, flight.GrantBody{
+			Event: "issued", Template: request.Template, TemplateVersion: saved.version, Target: info.Target, Action: action,
+			Uses: request.Uses, ExpiresAt: expiry.UTC().Format(flight.TimeLayout), IssuedBy: request.IssuedBy, Reason: request.Reason,
+			Bound: bound, BindingsDigest: hex.EncodeToString(bindings[:]),
+		})
+		if err != nil {
+			return err
+		}
 		issued = IssuedGrant{Grant: info, Secret: Secret(secret)}
 		return nil
 	})
@@ -160,12 +178,24 @@ func (s *Store) RevokeGrant(ctx context.Context, id, actor string) (GrantInfo, e
 	}
 	var info GrantInfo
 	err := s.writeTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE grants SET revoked_at=?,revoked_by=? WHERE id=? AND revoked_at IS NULL`, time.Now().UTC().UnixMilli(), actor, id); err != nil {
+		now := time.Now().UTC()
+		result, err := tx.ExecContext(ctx, `UPDATE grants SET revoked_at=?,revoked_by=? WHERE id=? AND revoked_at IS NULL`, now.UnixMilli(), actor, id)
+		if err != nil {
 			return err
 		}
-		var err error
+		changed, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
 		info, err = inspectGrant(ctx, tx, id)
-		return err
+		if err != nil {
+			return err
+		}
+		// Only the first revocation is an event; repeats change nothing.
+		if changed == 1 {
+			return appendFlight(ctx, tx, flight.KindGrant, info.IssuedTo, id, now, flight.GrantBody{Event: "revoked", By: actor})
+		}
+		return nil
 	})
 	if err != nil {
 		return GrantInfo{}, err

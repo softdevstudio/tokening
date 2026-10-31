@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/softdevstudio/tokening/internal/flight"
 	"github.com/softdevstudio/tokening/internal/matcher"
 )
 
@@ -66,9 +67,10 @@ func (s *Store) CompleteUpstream(ctx context.Context, receipt Consumption, statu
 		statusValue = status
 	}
 	return s.writeTx(ctx, func(tx *sql.Tx) error {
+		now := time.Now().UTC()
 		result, err := tx.ExecContext(ctx, `INSERT INTO decisions (grant_id,at,agent,tool,args_digest,outcome,code,reason,upstream_status,latency_ms,authorization_id)
    SELECT grant_id,?,agent,tool,args_digest,'allowed',?,?,?,?,id FROM decisions
-   WHERE id=? AND grant_id=? AND outcome='allowed' AND code='allowed' AND authorization_id IS NULL`, time.Now().UTC().UnixMilli(), string(code), reason, statusValue, latency.Milliseconds(), receipt.ReceiptID, receipt.Grant)
+   WHERE id=? AND grant_id=? AND outcome='allowed' AND code='allowed' AND authorization_id IS NULL`, now.UnixMilli(), string(code), reason, statusValue, latency.Milliseconds(), receipt.ReceiptID, receipt.Grant)
 		if err != nil {
 			return fmt.Errorf("append upstream completion: %w", err)
 		}
@@ -79,6 +81,18 @@ func (s *Store) CompleteUpstream(ctx context.Context, receipt Consumption, statu
 		if n != 1 {
 			return errors.New("authorization receipt not found")
 		}
-		return nil
+		id, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+		var agent string
+		if err = tx.QueryRowContext(ctx, `SELECT agent FROM decisions WHERE id=?`, id).Scan(&agent); err != nil {
+			return fmt.Errorf("read completion record: %w", err)
+		}
+		body := flight.ResultBody{DecisionID: id, AuthorizationID: receipt.ReceiptID, Code: string(code), LatencyMS: latency.Milliseconds()}
+		if status != 0 {
+			body.UpstreamStatus = &status
+		}
+		return appendFlight(ctx, tx, flight.KindResult, agent, receipt.Grant, now, body)
 	})
 }

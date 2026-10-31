@@ -25,7 +25,10 @@ var activeTemplatesSchema string
 //go:embed migrations/003_upstream_results.sql
 var upstreamResultsSchema string
 
-var migrations = []string{initialSchema, activeTemplatesSchema, upstreamResultsSchema}
+//go:embed migrations/004_flight.sql
+var flightSchema string
+
+var migrations = []string{initialSchema, activeTemplatesSchema, upstreamResultsSchema, flightSchema}
 
 type Store struct{ db *sql.DB }
 

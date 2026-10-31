@@ -86,6 +86,11 @@ func consumeInTx(ctx context.Context, tx *sql.Tx, hash [sha256.Size]byte, call m
 	if err != nil {
 		return Consumption{}, err
 	}
+	// The flight entries share this transaction: they commit with the use and
+	// the audit row, or not at all.
+	if err = recordFlightCall(ctx, tx, grant, agent, call, decision, id, now); err != nil {
+		return Consumption{}, err
+	}
 	return Consumption{Decision: decision, ReceiptID: id}, nil
 }
 
@@ -155,19 +160,15 @@ func recordDecision(ctx context.Context, tx *sql.Tx, d matcher.Decision, call ma
 	return err
 }
 func insertDecision(ctx context.Context, tx *sql.Tx, d matcher.Decision, call matcher.Call, agent string, now time.Time) (int64, error) {
-	data, err := json.Marshal(call)
+	digest, err := callDigest(call)
 	if err != nil {
-		return 0, fmt.Errorf("digest call: %w", err)
+		return 0, err
 	}
-	digest := sha256.Sum256(data)
 	var grantID any
 	if d.Grant != "" {
 		grantID = d.Grant
 	}
-	action := call.Tool
-	if action == "" {
-		action = call.Method + " " + call.Path
-	}
+	action := callAction(call)
 	outcome := "refused"
 	if d.Allowed {
 		outcome = "allowed"

@@ -139,4 +139,4 @@ Owner request, 2026-10-31. This section is the hand-off: Claude, ChatGPT/Codex o
 - [ ] 7. Version 0.1.2 and approved `release-readiness.json` digest; watch CI and the release; check assets, SHA256SUMS, latest/download links and run a downloaded binary
 - [ ] 8. Site: one post on tokening.net plus Quick start, Download and Reference updates; check the Pages deploy once
 
-**Resume here.** Step 2 is next (store integration). Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.
+**Resume here.** Step 2 code is pushed (`internal/store/flight.go`, migration 004, `internal/store/flight_test.go`); confirm its CI run is green before ticking it. Step 3 (CLI) is next. Local note: this sandbox cannot reach proxy.golang.org or modernc.org, so database tests run in CI; `internal/flight` tests run anywhere.

@@ -1,9 +1,9 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "status": "approved",
-  "source_sha256": "8c3c568be0e8bc38b5266994fa5a1efeaeff1c4ae9325a9b9cb8e2498b0b1f19",
-  "reviewer": "Independent release_review agent",
-  "reviewed_on": "2026-10-26",
-  "review_document": "docs/review-v0.1.1.md",
-  "base_commit": "fb5b425f00c4f1301e119945c15003d58362114f"
+  "source_sha256": "4e9d2b18bb94d8288cb817749b1ffa4dbb06134d89b54ab0400b2e1efc62fedd",
+  "reviewer": "Second-pass source review by Claude (no separate agent available in this session)",
+  "reviewed_on": "2026-10-31",
+  "review_document": "docs/review-v0.1.2.md",
+  "base_commit": "a7797a39fe7817054da8c2ff89d1095447bb4499"
 }

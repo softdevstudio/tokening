@@ -58,8 +58,8 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 		writeError(w, 406, "invalid_request", "Accept must include application/json and text/event-stream.")
 		return
 	}
-	protocol := r.Header.Get("MCP-Protocol-Version")
-	if protocol != "" && protocol != mcpVersion && protocol != "2025-03-26" {
+	wireVersion := r.Header.Get("MCP-Protocol-Version")
+	if wireVersion != "" && wireVersion != mcpVersion && wireVersion != "2025-03-26" {
 		writeError(w, 400, "invalid_request", "Unsupported MCP protocol version.")
 		return
 	}

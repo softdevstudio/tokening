@@ -1,7 +1,7 @@
 {
   "version": "0.1.4",
   "status": "approved",
-  "source_sha256": "2ccdd34493b3325b9b110d90b03dd5e0979224934d14c7ce8ece9526e3913b78",
+  "source_sha256": "bdb26a8eecf7ae8b0790a07ab3c9be18881e9c8cd0ea7b1db3c290fa37e0d0d5",
   "reviewer": "Second-pass review by Claude of its own fix; no separate agent could be started from this session",
   "reviewed_on": "2026-10-31",
   "review_document": "docs/review-v0.1.4.md",

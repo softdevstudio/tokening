@@ -73,12 +73,15 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 
 ## Case study follow-ups
 
-- [ ] `flight verify --head ""` should be a usage error (exit 2), not a silent skip with exit 0
-- [ ] After a saved-head mismatch, don't call rewritten entries verified; describe a shorter rebuilt chain without saying entries were removed from the end
+- [x] `flight verify --head ""` should be a usage error (exit 2), not a silent skip with exit 0 (v0.1.4)
+- [x] After a saved-head mismatch, don't call rewritten entries verified; describe a shorter rebuilt chain without saying entries were removed from the end (v0.1.4)
+- [x] MCP serverInfo reports the real build version, from one source (`internal/version`) (v0.1.4)
 
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-10-31, Claude.** Fix release v0.1.4 from the case study follow-ups. Failing tests first, then: an empty or malformed `flight verify --head` is a usage error (exit 2); after a saved-head mismatch verify no longer calls earlier entries good and a shorter log reads "entries were removed, or the chain was rebuilt shorter"; the version lives only in `internal/version` and MCP serverInfo/clientInfo report it (they said 0.1.1). One CI round lost to a variable name clash in the MCP handler (`protocol` already declared; renamed `wireVersion`). Released by the workflow (CI 41193182872, release 41193353544); assets, SHA256SUMS, latest/download and the downloaded Linux binary checked. Case studies rerun on 0.1.4; site posts, badge, Download, Reference and evidence file updated. Next: the v0.1.2 follow-ups, optional admin export route, then v0.2 with the owner.
 
 - **2026-10-31, Claude.** Flight recorder case studies from real runs of the v0.1.3 release binary in front of a local stub MCP CMS (Docker demo not used: Go module downloads are blocked here). Added `test/results/case-studies/flight/` (run.sh, run.py, policy, five transcripts, summary.json, a sample export). Site: three case study posts, one use cases post, links from the flight recorder post, whose title lost its version (URL now /tokening-adds-a-flight-recorder-for-ai-agent-actions/; Download and Quick start links updated). Found, not fixed: `verify --head ""` skips the head check and exits 0; misleading wording after a saved-head mismatch (see AGENTS.md). Owner decision recorded: digests stay plain SHA-256. Next: fix the empty-head case (usage error), then the existing follow-ups.
 

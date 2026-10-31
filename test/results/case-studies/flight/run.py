@@ -255,6 +255,10 @@ def main():
                "Shown as: tokening flight head --db tokening.db >> heads.txt")
         head = r.cmd(["flight", "head", "--db", str(DB)]).stdout.strip()
         r.cmd(["flight", "verify", "--db", str(DB), "--head", head])
+        r.note("An empty heads file gives an empty --head. Since 0.1.4 that is a usage error (exit 2),\n"
+               "not a silent skip. Shown as: tokening flight verify --db tokening.db --head \"$(tail -n 1 heads.txt)\"")
+        r.cmd(["flight", "verify", "--db", str(DB), "--head", ""],
+              shown='tokening flight verify --db tokening.db --head ""')
         summary["saved_head"] = head
     finally:
         server.terminate()

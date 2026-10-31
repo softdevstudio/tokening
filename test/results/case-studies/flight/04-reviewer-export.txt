@@ -1,7 +1,7 @@
 # Case 4: exporting one agent's actions for a reviewer
-# Recorded by run.py with tokening 0.1.3 on 2026-10-31
+# Recorded by run.py with tokening 0.1.4 on 2026-10-31
 
-$ tokening flight export --db tokening.db --agent editor-bot --since 2026-10-31T10:14:06Z --until 2026-10-31T10:14:10Z --output editor-bot.jsonl
+$ tokening flight export --db tokening.db --agent editor-bot --since 2026-10-31T10:40:11Z --until 2026-10-31T10:40:14Z --output editor-bot.jsonl
 Exported 10 entries.
 (exit 0)
 
@@ -17,20 +17,20 @@ No entry before it verifies.
 
 $ tokening flight verify --file editor-bot.jsonl --partial
 Intact as a partial export: 10 entries from 9 to 18, every hash checked, links checked where entries are consecutive.
-Head: 18:e7637ffc1e69d8c0080f596acedb7de42d31621468fdb740e47f54a1eafebd9f
+Head: 18:ae190c667b099e61f6f21a2746ae9347332ebb3c70c87a35b09ab745005e2f66
 (exit 0)
 
 $ tokening flight replay --file editor-bot.jsonl
-#9  2026-10-31T10:14:08.009Z  grant     g_41f0227dee31f9c433cfb1594dbf5968 issued to editor-bot by ops-maria: cms.edit-post-text on update_post, 2 uses, expires 2026-10-31T10:29:08.009Z, bound id, reason "fix typo in post 3 title"
-#10  2026-10-31T10:14:08.016Z  request   g_41f0227dee31f9c433cfb1594dbf5968 editor-bot asked for update_post on cms with arguments id, title (digest 87053af89cbe)
-#11  2026-10-31T10:14:08.016Z  decision  g_41f0227dee31f9c433cfb1594dbf5968 allowed: Call fits this grant. One use was consumed before forwarding. 1 use left.
-#12  2026-10-31T10:14:08.034Z  result    g_41f0227dee31f9c433cfb1594dbf5968 upstream answered HTTP 200 in 14 ms
-#13  2026-10-31T10:14:08.039Z  request   g_41f0227dee31f9c433cfb1594dbf5968 editor-bot asked for update_post on cms with arguments id, status, title (digest ee3b7a6acd18)
-#14  2026-10-31T10:14:08.039Z  decision  g_41f0227dee31f9c433cfb1594dbf5968 refused (arg_not_allowed): Grant does not allow argument status. Allowed: content, id, title. 1 use left.
-#15  2026-10-31T10:14:08.051Z  grant     g_985d70592504547842f46ee5f4c67d5e issued to editor-bot by ops-maria: cms.edit-post-text on update_post, 1 use, expires 2026-10-31T10:29:08.051Z, bound id, reason "update pricing title"
-#16  2026-10-31T10:14:08.073Z  grant     g_985d70592504547842f46ee5f4c67d5e revoked by ops-maria
-#17  2026-10-31T10:14:08.081Z  request   g_985d70592504547842f46ee5f4c67d5e editor-bot asked for update_post on cms with arguments id, title (digest f7c35956a70d)
-#18  2026-10-31T10:14:08.081Z  decision  g_985d70592504547842f46ee5f4c67d5e refused (grant_revoked): Grant g_985d70592504547842f46ee5f4c67d5e was revoked at 2026-10-31T10:14:08.073Z. 1 use left.
+#9  2026-10-31T10:40:12.698Z  grant     g_bc3cbaec237464d10e22cbe6b3615f88 issued to editor-bot by ops-maria: cms.edit-post-text on update_post, 2 uses, expires 2026-10-31T10:55:12.698Z, bound id, reason "fix typo in post 3 title"
+#10  2026-10-31T10:40:12.705Z  request   g_bc3cbaec237464d10e22cbe6b3615f88 editor-bot asked for update_post on cms with arguments id, title (digest 87053af89cbe)
+#11  2026-10-31T10:40:12.705Z  decision  g_bc3cbaec237464d10e22cbe6b3615f88 allowed: Call fits this grant. One use was consumed before forwarding. 1 use left.
+#12  2026-10-31T10:40:12.716Z  result    g_bc3cbaec237464d10e22cbe6b3615f88 upstream answered HTTP 200 in 7 ms
+#13  2026-10-31T10:40:12.719Z  request   g_bc3cbaec237464d10e22cbe6b3615f88 editor-bot asked for update_post on cms with arguments id, status, title (digest ee3b7a6acd18)
+#14  2026-10-31T10:40:12.719Z  decision  g_bc3cbaec237464d10e22cbe6b3615f88 refused (arg_not_allowed): Grant does not allow argument status. Allowed: content, id, title. 1 use left.
+#15  2026-10-31T10:40:12.732Z  grant     g_029a10b612b38b01be751fa94adccd27 issued to editor-bot by ops-maria: cms.edit-post-text on update_post, 1 use, expires 2026-10-31T10:55:12.732Z, bound id, reason "update pricing title"
+#16  2026-10-31T10:40:12.741Z  grant     g_029a10b612b38b01be751fa94adccd27 revoked by ops-maria
+#17  2026-10-31T10:40:12.747Z  request   g_029a10b612b38b01be751fa94adccd27 editor-bot asked for update_post on cms with arguments id, title (digest f7c35956a70d)
+#18  2026-10-31T10:40:12.747Z  decision  g_029a10b612b38b01be751fa94adccd27 refused (grant_revoked): Grant g_029a10b612b38b01be751fa94adccd27 was revoked at 2026-10-31T10:40:12.741Z. 1 use left.
 Every entry here checks out, but 8 of entries 1 to 18 are missing from this file: it is a filtered export, or entries were removed. Verify the whole log with tokening flight verify --db.
 (exit 0)
 
@@ -38,5 +38,5 @@ Every entry here checks out, but 8 of entries 1 to 18 are missing from this file
 
 $ tokening flight verify --file editor-bot-edited.jsonl --partial
 Broken at entry 14: entry 14 does not match its own hash: its contents were changed after it was written.
-Entries 9 to 13 verify. Last good head: 13:736ecf8746108dfb02bbd2ca260eceafe1fae291b332f99802969db213f27d06
+Entries 9 to 13 verify. Last good head: 13:088136e77439b509938667a6f5c2254f90ee9212901b0c7d6bf1b0edadf5bc3f
 (exit 1)

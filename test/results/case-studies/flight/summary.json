@@ -1,10 +1,10 @@
 {
-  "tokening": "tokening 0.1.3",
+  "tokening": "tokening 0.1.4",
   "upstream": "local stub CMS speaking MCP over HTTP on 127.0.0.1",
   "grants": {
-    "publish": "g_55cbfbfd58d8c70d827674d9a1b126f6",
-    "edit": "g_41f0227dee31f9c433cfb1594dbf5968",
-    "revoked": "g_985d70592504547842f46ee5f4c67d5e"
+    "publish": "g_e7f2d5d81610f2790640cc31683ca017",
+    "edit": "g_bc3cbaec237464d10e22cbe6b3615f88",
+    "revoked": "g_029a10b612b38b01be751fa94adccd27"
   },
   "tools_list_for_publish_grant": [
     "publish_post"
@@ -16,7 +16,7 @@
         "id": 8
       },
       "isError": true,
-      "text": "{\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Grant is bound to id 7; call sent id 8.\",\"grant\":\"g_55cbfbfd58d8c70d827674d9a1b126f6\"}"
+      "text": "{\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Grant is bound to id 7; call sent id 8.\",\"grant\":\"g_e7f2d5d81610f2790640cc31683ca017\"}"
     },
     {
       "tool": "publish_post",
@@ -32,7 +32,7 @@
         "id": 7
       },
       "isError": true,
-      "text": "{\"allowed\":false,\"code\":\"grant_exhausted\",\"reason\":\"Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left.\",\"grant\":\"g_55cbfbfd58d8c70d827674d9a1b126f6\"}"
+      "text": "{\"allowed\":false,\"code\":\"grant_exhausted\",\"reason\":\"Grant g_e7f2d5d81610f2790640cc31683ca017 allowed 1 use and has none left.\",\"grant\":\"g_e7f2d5d81610f2790640cc31683ca017\"}"
     },
     {
       "tool": "update_post",
@@ -51,7 +51,7 @@
         "status": "published"
       },
       "isError": true,
-      "text": "{\"allowed\":false,\"code\":\"arg_not_allowed\",\"reason\":\"Grant does not allow argument status. Allowed: content, id, title.\",\"grant\":\"g_41f0227dee31f9c433cfb1594dbf5968\"}"
+      "text": "{\"allowed\":false,\"code\":\"arg_not_allowed\",\"reason\":\"Grant does not allow argument status. Allowed: content, id, title.\",\"grant\":\"g_bc3cbaec237464d10e22cbe6b3615f88\"}"
     },
     {
       "tool": "update_post",
@@ -60,7 +60,7 @@
         "title": "Pricing 2027"
       },
       "isError": true,
-      "text": "{\"allowed\":false,\"code\":\"grant_revoked\",\"reason\":\"Grant g_985d70592504547842f46ee5f4c67d5e was revoked at 2026-10-31T10:14:08.073Z.\",\"grant\":\"g_985d70592504547842f46ee5f4c67d5e\"}"
+      "text": "{\"allowed\":false,\"code\":\"grant_revoked\",\"reason\":\"Grant g_029a10b612b38b01be751fa94adccd27 was revoked at 2026-10-31T10:40:12.741Z.\",\"grant\":\"g_029a10b612b38b01be751fa94adccd27\"}"
     },
     {
       "tool": "update_post",
@@ -101,10 +101,10 @@
     }
   },
   "window": [
-    "2026-10-31T10:14:06Z",
-    "2026-10-31T10:14:10Z"
+    "2026-10-31T10:40:11Z",
+    "2026-10-31T10:40:14Z"
   ],
-  "saved_head": "20:9bc8a9b4ff19df410823fe4f621fe5560d0fbc1bc7daf95a98454314152ea90c",
+  "saved_head": "20:adff53dd54fbae58a0df9c57fa306b995135b864d228365fc9bd2ca2511fc276",
   "entries": 20,
   "entries_recomputed_from_docs_format": 20,
   "never_stored_search": {

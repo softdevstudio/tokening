@@ -1,5 +1,5 @@
 # Case 2: someone edits, then deletes, a row in the database
-# Recorded by run.py with tokening 0.1.3 on 2026-10-31
+# Recorded by run.py with tokening 0.1.4 on 2026-10-31
 
 # The refused attempt on post 8 is entries 2 (request) and 3 (decision).
 # Copy A: the decision's outcome changed from refused to allowed with SQLite after dropping the update trigger.
@@ -9,18 +9,18 @@ $ sqlite3 tampered.db "DROP TRIGGER flight_no_update; UPDATE flight SET body = r
 
 $ tokening flight verify --db tampered.db
 Broken at entry 3: entry 3 does not match its own hash: its contents were changed after it was written.
-Entries 1 to 2 verify. Last good head: 2:4c9592e76b786f87206ec2fae9e765a5b738d06a4fa06a680b2fc134d5836c10
+Entries 1 to 2 verify. Last good head: 2:496294b10a0b0e81d364b9298ce439ecffe7b60b2266b5d22a7b3c984291d5b8
 (exit 1)
 
 $ tokening flight replay --db tampered.db --agent publisher-bot
-#1  2026-10-31T10:14:07.894Z  grant     g_55cbfbfd58d8c70d827674d9a1b126f6 issued to publisher-bot by ops-maria: cms.publish-post on publish_post, 1 use, expires 2026-10-31T10:29:07.894Z, bound id, reason "publish the approved launch note"
-#2  2026-10-31T10:14:07.935Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 644da283c2c9)
-#3  2026-10-31T10:14:07.935Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 allowed (arg_mismatch): Grant is bound to id 7; call sent id 8. 1 use left.
-#4  2026-10-31T10:14:07.953Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
-#5  2026-10-31T10:14:07.953Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
-#6  2026-10-31T10:14:07.983Z  result    g_55cbfbfd58d8c70d827674d9a1b126f6 upstream answered HTTP 200 in 23 ms
-#7  2026-10-31T10:14:07.989Z  request   g_55cbfbfd58d8c70d827674d9a1b126f6 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
-#8  2026-10-31T10:14:07.989Z  decision  g_55cbfbfd58d8c70d827674d9a1b126f6 refused (grant_exhausted): Grant g_55cbfbfd58d8c70d827674d9a1b126f6 allowed 1 use and has none left. 0 uses left.
+#1  2026-10-31T10:40:12.648Z  grant     g_e7f2d5d81610f2790640cc31683ca017 issued to publisher-bot by ops-maria: cms.publish-post on publish_post, 1 use, expires 2026-10-31T10:55:12.648Z, bound id, reason "publish the approved launch note"
+#2  2026-10-31T10:40:12.667Z  request   g_e7f2d5d81610f2790640cc31683ca017 publisher-bot asked for publish_post on cms with arguments id (digest 644da283c2c9)
+#3  2026-10-31T10:40:12.667Z  decision  g_e7f2d5d81610f2790640cc31683ca017 allowed (arg_mismatch): Grant is bound to id 7; call sent id 8. 1 use left.
+#4  2026-10-31T10:40:12.671Z  request   g_e7f2d5d81610f2790640cc31683ca017 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#5  2026-10-31T10:40:12.671Z  decision  g_e7f2d5d81610f2790640cc31683ca017 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
+#6  2026-10-31T10:40:12.685Z  result    g_e7f2d5d81610f2790640cc31683ca017 upstream answered HTTP 200 in 10 ms
+#7  2026-10-31T10:40:12.688Z  request   g_e7f2d5d81610f2790640cc31683ca017 publisher-bot asked for publish_post on cms with arguments id (digest 14fb46f66868)
+#8  2026-10-31T10:40:12.688Z  decision  g_e7f2d5d81610f2790640cc31683ca017 refused (grant_exhausted): Grant g_e7f2d5d81610f2790640cc31683ca017 allowed 1 use and has none left. 0 uses left.
 Warning: the chain is broken at entry 3: entry 3 does not match its own hash: its contents were changed after it was written. Entries from there on cannot be trusted.
 (exit 1)
 
@@ -28,7 +28,7 @@ $ sqlite3 deleted.db "DROP TRIGGER flight_no_delete; DELETE FROM flight WHERE se
 
 $ tokening flight verify --db deleted.db
 Broken at entry 4: entries 2 to 3 are missing between entries 1 and 4.
-Entries 1 to 1 verify. Last good head: 1:34358d7b44a6882464ac50af0d52b8fe6d9bd3daf688cfbfc96931c0a664e9b3
+Entries 1 to 1 verify. Last good head: 1:4052375b6fae7a73dacbc43d2b136a2411eba103b96305c3bc474d61407b2c5b
 (exit 1)
 
 # Copy C: the last three entries cut off the end.
@@ -36,6 +36,6 @@ Entries 1 to 1 verify. Last good head: 1:34358d7b44a6882464ac50af0d52b8fe6d9bd3d
 $ sqlite3 truncated.db "DROP TRIGGER flight_no_delete; DELETE FROM flight WHERE seq > 17"
 
 $ tokening flight verify --db truncated.db
-Broken at entry 20: the database assigned entries up to 20 but the log ends at entry 17: entries were removed from the end.
-Entries 1 to 17 verify. Last good head: 17:f11255ad75f35e6c14935aa8b4f36baaf4ec9828ff587693c6e708e533e64c6f
+Broken at entry 20: the database assigned entries up to 20 but the log ends at entry 17: entries were removed, or the chain was rebuilt shorter.
+Entries 1 to 17 link to each other, but so would a rebuilt chain. Check them against a head saved earlier before trusting them.
 (exit 1)

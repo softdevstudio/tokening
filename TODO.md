@@ -58,6 +58,31 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo replay on the home page; footer "A SoftDevStudio.com project"
 - [x] Add Tokening to softdevstudio.com
 
+## v0.2 Phase A: stdio MCP targets (in progress)
+
+Agreed with the owner on 2026-11-01 (item 2 of softdev-plan.md in photozeitgeist/jollyroger.biz, Phase A only; ask before Phase B, the grant request flow and `tokening explain`). Claude is doing this phase.
+
+Why: most MCP servers people run (filesystem, GitHub, databases) speak stdio, and Claude Desktop only launches commands. Without stdio on both sides Tokening can't sit in front of them.
+
+Design:
+- Upstream: an `mcp_stdio` target's command is started for each allowed `tools/call` (the same one-session-per-call model as `mcp_http`): initialize, `notifications/initialized`, the one `tools/call`, then stdin closed and the process (and on Unix its process group) stopped. Requests the server sends to the client get a JSON-RPC "method not found" error; its notifications are ignored. Lines are capped at the body limit, the whole call at a timeout.
+- Child environment: never the server's own. A short base list (PATH, HOME, temp dirs, locale, and the Windows system variables a process needs) plus the target's env credential. The vault key, admin token and every other `TOKENING_*` variable stay out.
+- Env credential format: `{"env": {"NAME": "value"}}`, names `[A-Z_][A-Z0-9_]*`, not a base-list name or `TOKENING_*`, values without NUL. An empty object is allowed (a filesystem server needs no secret). `tokening target add` validates it like the other types.
+- Outcome: a JSON-RPC result is recorded as upstream status 200 and a server that exits, times out or answers with an error as a failure, so audit and flight records keep their shape.
+- Agent side: `tokening connect URL` reads newline-delimited JSON-RPC on stdin, posts each message to the gateway's `/mcp/target` with the grant from `TOKENING_GRANT`, and writes the replies to stdout; HTTP refusals come back as JSON-RPC errors with the readable reason. This is what a Claude Desktop config runs.
+- Code that needs no SQLite or vault lives in `internal/stdio` and `internal/connect` (standard library only), so it can be tested in sessions that cannot download modules.
+- go.mod stays at go 1.23 for now: cloud sessions have Go 1.24.7 and no toolchain download.
+
+Steps:
+- [ ] internal/stdio runner and tests (fake stdio server via the test binary)
+- [ ] env credential validation; admin target add for stdio
+- [ ] gateway: mcp_stdio in the MCP adapter, dispatch to the runner; test that a single-file grant reaches only that file
+- [ ] internal/connect and `tokening connect`; tests
+- [ ] Windows CI job; examples/claude-desktop config and policy; README, docs/policy.md, docs/server.md
+- [ ] independent review (a separate agent), fixes; release 0.2.0 through the workflow; check assets and run a downloaded binary
+- [ ] case study with the released binary in front of the real filesystem MCP server, recorded in test/results/case-studies
+- [ ] tokening.net post and pages, softdevstudio.com note, softdev-plan.md status
+
 ## v0.1.2: flight recorder (shipped)
 
 - [x] Hash-chained flight log, `tokening flight verify|export|replay|head`, tests, docs, release v0.1.2, site post (owner request, 2026-10-31). Details in the "Flight recorder (v0.1.2): done" section of `AGENTS.md`.

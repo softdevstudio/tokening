@@ -11,6 +11,10 @@ Where to start a session:
 
 Don't put project rules in this file. If a rule changes, change it in `AGENTS.md` so both assistants see it.
 
+## In progress: v0.2 Phase A, stdio MCP targets
+
+Agreed with the owner 2026-11-01. Design and steps: the "v0.2 Phase A" section of `TODO.md`. Resume from its first unticked step; pull first.
+
 ## Flight recorder (v0.1.2): done
 
 Shipped 2026-10-31 as v0.1.2 (release run 41189145735, CI run 41188972690, tag on 8c81d74). An append-only, hash-chained log of every grant issue and revocation, MCP tool call or REST call, decision and upstream result, written in the same SQLite transaction as the change (table `flight`, schema 4). Commands: `tokening flight verify | export | replay | head`, reading the database read-only. Reference: `docs/flight.md`. Chain logic: `internal/flight`; appends and reads: `internal/store/flight.go`.

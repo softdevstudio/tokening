@@ -1,3 +1,22 @@
+# Tokening v0.2.0
+
+Tokening can now sit in front of the MCP servers most people actually run: the ones that speak stdio, such as the filesystem, GitHub and database servers, and the clients that only launch commands, such as Claude Desktop. Grant checking, consumption, the log format, the flight recorder and the database schema are unchanged.
+
+- A target of kind `mcp_stdio` names a server command. For each tool call a grant allows, the gateway starts that command, sends the one call and stops it again, with everything the server started (a process group on Unix, a Job Object on Windows). Calls the grant refuses never start the server.
+- The server gets only PATH, HOME, temp and locale variables (plus the Windows system ones) and the variables in its target's credential, `{"env": {"NAME": "value"}}`. The vault key, the admin token and the gateway's other variables stay out. A server that needs no secret needs no stored credential.
+- Calls have a 60-second deadline that holds even when a server stops reading, at most four servers per target run at once, and server messages are limited to 1 MiB.
+- `tokening connect URL` relays a stdio client to the gateway, with the grant from `TOKENING_GRANT`. Refusals come back as JSON-RPC errors carrying Tokening's code and reason. Plain http is accepted only for a gateway on the same machine.
+- `examples/claude-desktop` has a policy, a Claude Desktop config and the steps for a grant that lets Claude read one file, or write one file once, through the filesystem server, pinned to @modelcontextprotocol/server-filesystem 2.1.0.
+- CI now runs the tests on Windows too.
+
+A server process runs as the gateway's user and can reach what that user can. Grants narrow what an agent can ask a server for, not what the server process can do; docs/server.md says how to run servers with free-form paths or commands.
+
+The review, by a separate agent, is in docs/review-v0.2.0.md. It is a project source review, not an external security audit.
+
+Download the archive for your operating system and architecture, verify it against SHA256SUMS and read README.md inside it. Archive names have no version, so latest/download links keep working.
+
+Licence: Apache 2.0. Third-party notices are included in every archive.
+
 # Tokening v0.1.4
 
 A small fix release for `tokening flight verify`, from the flight recorder case studies. Grant checking, consumption, credentials, the log format and the database schema are unchanged. Logs written by v0.1.2 and v0.1.3 verify with v0.1.4.

@@ -1,9 +1,9 @@
 {
-  "version": "0.1.4",
+  "version": "0.2.0",
   "status": "approved",
-  "source_sha256": "bdb26a8eecf7ae8b0790a07ab3c9be18881e9c8cd0ea7b1db3c290fa37e0d0d5",
-  "reviewer": "Second-pass review by Claude of its own fix; no separate agent could be started from this session",
-  "reviewed_on": "2026-10-31",
-  "review_document": "docs/review-v0.1.4.md",
-  "base_commit": "f561395"
+  "source_sha256": "2d4bddf28f6f02bf27ff4f0af13a46734b68b702367a41f4c09b7a94d4bde846",
+  "reviewer": "Separate Claude agent that did not write the change, with its own adversarial tests; its findings were fixed in 42fb6eb",
+  "reviewed_on": "2026-11-01",
+  "review_document": "docs/review-v0.2.0.md",
+  "base_commit": "31148c2"
 }

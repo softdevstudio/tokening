@@ -74,12 +74,13 @@ Design:
 - go.mod stays at go 1.23 for now: cloud sessions have Go 1.24.7 and no toolchain download.
 
 Steps:
-- [ ] internal/stdio runner and tests (fake stdio server via the test binary)
-- [ ] env credential validation; admin target add for stdio
-- [ ] gateway: mcp_stdio in the MCP adapter, dispatch to the runner; test that a single-file grant reaches only that file
-- [ ] internal/connect and `tokening connect`; tests
-- [ ] Windows CI job; examples/claude-desktop config and policy; README, docs/policy.md, docs/server.md
-- [ ] independent review (a separate agent), fixes; release 0.2.0 through the workflow; check assets and run a downloaded binary
+- [x] internal/stdio runner and tests (fake stdio server via the test binary)
+- [x] env credential validation; admin target add for stdio
+- [x] gateway: mcp_stdio in the MCP adapter, dispatch to the runner; test that a single-file grant reaches only that file
+- [x] internal/connect and `tokening connect`; tests
+- [x] Windows CI job; examples/claude-desktop config and policy; README, docs/policy.md, docs/server.md
+- [x] independent review (a separate agent, docs/review-v0.2.0.md), fixes
+- [ ] release 0.2.0 through the workflow; check assets and run a downloaded binary
 - [ ] case study with the released binary in front of the real filesystem MCP server, recorded in test/results/case-studies
 - [ ] tokening.net post and pages, softdevstudio.com note, softdev-plan.md status
 
@@ -105,6 +106,8 @@ Steps:
 ## Session log
 
 Newest first. One entry per session: date, who, what changed, what's next, blockers.
+
+- **2026-11-01, Claude.** v0.2 Phase A, agreed with the owner (item 2 of softdev-plan.md): stdio MCP targets and `tokening connect`. New stdlib-only packages `internal/stdio` (one call per server start, minimal environment, process group or Job Object, deadline watcher) and `internal/connect` (stdio-to-gateway relay), so they test in cloud sessions that cannot download modules; gateway wiring with a test that a one-file grant reaches only that file; Windows CI job; examples/claude-desktop; docs. Checked against the real @modelcontextprotocol/server-filesystem 2.1.0 locally. One CI round: the release guard test found the README linking a file missing from archives (examples was not recursive), and the review found `.gitignore` had kept the example policy out of git. Independent review by a separate agent (docs/review-v0.2.0.md): one blocker and six should-fix items, all fixed or documented. Type checks here use stub modules in the session scratchpad (never committed). Released as 0.2.0 by the workflow (see the next entry for checks). Next: case study with the released binary, site, then ask the owner about Phase B (grant request flow, `tokening explain`).
 
 - **2026-10-31, Claude.** Fix release v0.1.4 from the case study follow-ups. Failing tests first, then: an empty or malformed `flight verify --head` is a usage error (exit 2); after a saved-head mismatch verify no longer calls earlier entries good and a shorter log reads "entries were removed, or the chain was rebuilt shorter"; the version lives only in `internal/version` and MCP serverInfo/clientInfo report it (they said 0.1.1). One CI round lost to a variable name clash in the MCP handler (`protocol` already declared; renamed `wireVersion`). Released by the workflow (CI 41193182872, release 41193353544); assets, SHA256SUMS, latest/download and the downloaded Linux binary checked. Case studies rerun on 0.1.4; site posts, badge, Download, Reference and evidence file updated. Next: the v0.1.2 follow-ups, optional admin export route, then v0.2 with the owner.
 

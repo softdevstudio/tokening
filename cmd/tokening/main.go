@@ -20,6 +20,8 @@ func run(args []string, out, errOut io.Writer) int {
 			return replayCommand(args[1:], out, errOut)
 		case "flight":
 			return flightCommand(args[1:], out, errOut)
+		case "connect":
+			return connectCommand(args[1:], os.Stdin, out, errOut)
 		case "target", "template", "grant", "log":
 			return adminCommand(args, out, errOut)
 		case "doctor":
@@ -76,7 +78,7 @@ func run(args []string, out, errOut io.Writer) int {
 func usage(out io.Writer) {
 	fmt.Fprintln(out, "Tokening: narrow permissions for AI agents.")
 	fmt.Fprintln(out, "Usage: tokening <command>")
-	fmt.Fprintln(out, "Commands: serve, check <policy.json>, target, template, grant, log, flight, replay, doctor, keygen, version, help")
+	fmt.Fprintln(out, "Commands: serve, check <policy.json>, target, template, grant, log, connect, flight, replay, doctor, keygen, version, help")
 	fmt.Fprintln(out, "Run tokening serve --help for listener options, tokening flight help for the flight recorder.")
 }
 

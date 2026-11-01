@@ -6,7 +6,7 @@ Tokening sits between an agent and an API and issues grants for single actions: 
 
 The real upstream credential must stay in Tokening, outside the agent environment. The admin listener must also be unreachable by agents. A grant cannot prevent bypass if the agent already has the real credential.
 
-Tokening v0.1 runs as one Go binary with a SQLite database. MCP HTTP and REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. A read-only admin panel and offline visual replay are implemented. Since v0.1.2 a flight recorder keeps a hash-chained log of every grant, request, decision and upstream result. Release binaries and recorded results are produced by the [release workflow](docs/releases.md). The approved scope is in [the plan](docs/plan.md).
+Tokening runs as one Go binary with a SQLite database. MCP over HTTP and over stdio, REST forwarding, encrypted credentials, grant commands and audit export are implemented. The Docker WordPress demo runs with make demo. A read-only admin panel and offline visual replay are implemented. Since v0.2 it can front the stdio MCP servers most people run (filesystem, GitHub, databases), and `tokening connect` lets Claude Desktop and other command-launching clients reach it. Since v0.1.2 a flight recorder keeps a hash-chained log of every grant, request, decision and upstream result. Release binaries and recorded results are produced by the [release workflow](docs/releases.md). The approved scope is in [the plan](docs/plan.md).
 
 ## Build and run
 
@@ -56,6 +56,18 @@ tokening log --export > decisions.jsonl
 The agent sends its grant in Authorization: Bearer to POST /mcp/{target}, /http/{target}/... or GET /grant. MCP tools/list is derived from the saved grant. Tool calls and REST calls consume a use in the same SQLite transaction as the authorization record, before forwarding. Upstream failures still spend the use. Neither the server nor the CLI retries writes automatically.
 
 Run tokening doctor in the agent environment to look for common credential variable names. It reports names only, cannot find every credential source and cannot inspect another process.
+
+## Stdio MCP servers and Claude Desktop
+
+Most MCP servers speak stdio: the client starts them as a command. A target of kind `mcp_stdio` names that command, and the gateway starts it for each call it allows, sends the one tool call and stops it again. The server never gets the gateway's environment: only PATH, HOME, temp and locale variables (plus the Windows system ones) and the variables in the target's credential, such as `{"env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "..."}}`. A server that needs no secret needs no stored credential.
+
+Claude Desktop only launches commands, so it runs `tokening connect`, which relays its messages to the gateway with the grant from `TOKENING_GRANT`:
+
+```json
+{"mcpServers": {"notes": {"command": "tokening", "args": ["connect", "http://127.0.0.1:8080/mcp/notes"], "env": {"TOKENING_GRANT": "the grant secret"}}}}
+```
+
+With a grant bound to one file, Claude can read that file and nothing else in the folder: other paths, `..`, extra arguments and other tools are refused before the server starts. [examples/claude-desktop](examples/claude-desktop/README.md) has the policy, the config and the steps.
 
 ## Flight recorder
 

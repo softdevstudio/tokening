@@ -50,6 +50,18 @@ log returns up to 100 records after an exclusive ID cursor. --follow returns an 
 
 Run tokening doctor inside the agent's environment. It reports common credential variable names, never values. It exits 1 when any listed credential variable is visible. It cannot inspect another process or discover every possible credential source. Operator shells are expected to contain their own admin credentials; do not hand that environment to the agent.
 
+# Stdio servers
+
+An `mcp_stdio` target's command is started by the gateway for each allowed tool call, as the user running `tokening serve`, in the gateway's working directory. It does not inherit the gateway's environment. It gets PATH, HOME, USER, LOGNAME, SHELL, TMPDIR, TMP, TEMP, LANG, LC_ALL, LC_CTYPE and TZ when set, the Windows variables a process needs (SystemRoot, PATHEXT, ComSpec, USERPROFILE, APPDATA and the like), and the variables in the target's stored credential. The vault key, the admin token and every other TOKENING_ variable stay out.
+
+A stdio credential file holds `{"env": {"NAME": "value"}}`. Names are upper case letters, digits and underscores, can't start with a digit, can't be one of the base names above and can't start with TOKENING_. Values can't contain NUL. `{"env": {}}` is valid, and a target with no stored credential runs with no extra variables.
+
+On Unix the server runs in its own process group, and the whole group is stopped after the call. On Windows there is no group: the server is stopped when its stdin closes or, after two seconds, killed, and a process it started itself may outlive it. Use servers that exit on end of input there.
+
+# Connecting a stdio client
+
+`tokening connect URL` relays a client that launches MCP servers as commands (Claude Desktop, many local agents) to the agent listener. URL is http(s)://host:port/mcp/target without credentials, query or fragment. The grant secret comes from TOKENING_GRANT. Each line on stdin is one JSON-RPC message, posted with the grant as its bearer token; replies go to stdout one per line. A refusal from the gateway comes back as a JSON-RPC error whose message holds Tokening's code and reason. Notifications get no reply. The relay does not follow redirects or use environment proxies, and reports a gateway it can't reach on stderr and, for requests, as a JSON-RPC error. Messages are limited to 4 MiB.
+
 # Admin API
 
 Every request needs Authorization: Bearer with the admin token. Tokens have 32 to 512 non-whitespace characters and should be generated randomly. Responses use no-store. JSON writes reject duplicate keys and unknown fields and are capped at 1 MiB. Credential values are limited to 64 KiB. There is no cookie authentication.
@@ -58,7 +70,7 @@ POST /admin/targets accepts name and credential. GET /admin/templates returns th
 
 GET /admin/decisions accepts since (exclusive nonnegative ID), grant (optional ID filter) and follow=true (optional SSE). GET /admin/decisions.jsonl accepts since and grant and reports a successful complete snapshot with the Tokening-Export-Complete: true HTTP trailer. Check this marker when calling the API directly. A stream that closes early is incomplete even if its initial status was 200.
 
-Explain remains a later-phase command. The Docker WordPress demo and read-only panel are implemented. Stdio upstreams belong to the later MCP integration phase. Release archives and recorded results are described in docs/releases.md.
+Explain remains a later-phase command. The Docker WordPress demo and read-only panel are implemented. Release archives and recorded results are described in docs/releases.md.
 
 # Read-only panel and replay
 

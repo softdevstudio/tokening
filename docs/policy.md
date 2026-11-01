@@ -14,8 +14,9 @@ starting with a letter or digit.
 Targets have `kind`, `url` (for `http` or `mcp_http`) or a `command` array (for
 `mcp_stdio`), and `credential`. A credential contains `type` and a `ref` such as
 `vault:demo-wp`. HTTP credential types are `basic`, `bearer` and `header`; stdio
-uses `env`. Actual credentials never belong in this file. Command and credential
-shapes are validated here; the gateway and stdio runner are not implemented yet.
+uses `env`. Actual credentials never belong in this file. A stdio target's
+`command` is the program and its arguments, started without a shell; see
+[running Tokening](server.md) for what the server process gets.
 HTTP URLs cannot contain user credentials, a query or a fragment.
 
 Templates name a `target`, a positive `max_uses` and a positive whole-second

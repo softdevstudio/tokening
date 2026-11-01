@@ -85,6 +85,62 @@ jobs:
           name: check-log-${{ matrix.os }}
           path: test/results/local/
 
+  windows:
+    # Release archives ship for Windows, and stdio targets start processes,
+    # which work differently there. Go tests only: the Python checks and
+    # make run on Linux and macOS above.
+    name: Check (windows-latest)
+    runs-on: windows-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Vet, test and build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test/results/local
+          go vet ./...
+          go test -count=1 -json ./... > test/results/local/tests.jsonl || failed=1
+          go build -trimpath -o bin/tokening.exe ./cmd/tokening && ./bin/tokening.exe version
+          if [ -n "${failed:-}" ]; then
+            echo "::error::Windows tests failed; see the annotations below."
+            exit 1
+          fi
+      - name: Show failing tests
+        if: failure()
+        shell: bash
+        run: |
+          python - <<'PY2'
+          import json, os
+          path = 'test/results/local/tests.jsonl'
+          if os.path.exists(path):
+              out = {}
+              for line in open(path, encoding='utf-8'):
+                  try:
+                      ev = json.loads(line)
+                  except ValueError:
+                      continue
+                  key = (ev.get('Package', ''), ev.get('Test', ''))
+                  if ev.get('Action') == 'output':
+                      out.setdefault(key, []).append(ev.get('Output', ''))
+                  elif ev.get('Action') == 'fail' and ev.get('Test'):
+                      text = ''.join(out.get(key, []))[-1500:].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+                      print('::error title=windows ' + key[1] + '::' + text)
+          PY2
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-log-windows-latest
+          path: test/results/local/
+
   demo:
     name: Docker WordPress demo
     runs-on: ubuntu-latest

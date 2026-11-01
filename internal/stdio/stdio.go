@@ -167,7 +167,7 @@ func Call(ctx context.Context, opt Options, tool string, args map[string]json.Ra
 	// After the server exits, wait at most this long for a child of its own
 	// that still holds stderr open.
 	cmd.WaitDelay = time.Second
-	setGroup(cmd)
+	grp := newGroup(cmd)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrStart, err)
@@ -188,6 +188,13 @@ func Call(ctx context.Context, opt Options, tool string, args map[string]json.Ra
 		stdin.Close()
 		return nil, fmt.Errorf("%w: %v", ErrStart, err)
 	}
+	defer grp.close()
+	if err := grp.attach(); err != nil {
+		grp.kill()
+		stdin.Close()
+		cmd.Wait()
+		return nil, fmt.Errorf("%w: could not contain the server's processes: %v", ErrStart, err)
+	}
 	done := make(chan struct{})
 	var waitErr error
 	go func() {
@@ -202,15 +209,28 @@ func Call(ctx context.Context, opt Options, tool string, args map[string]json.Ra
 		case <-done:
 		case <-time.After(2 * time.Second):
 		}
-		killGroup(cmd)
+		grp.kill()
 		<-done
 	}()
+	// The deadline must hold even while a write to a server that stopped
+	// reading is blocked: when it passes, close stdin and stop the server,
+	// which unblocks the write and the reads.
+	stopWatch := context.AfterFunc(ctx, func() {
+		stdin.Close()
+		grp.kill()
+	})
+	defer stopWatch()
 
 	s := &session{in: stdin, out: bufio.NewReaderSize(stdout, 64<<10), max: opt.MaxLine, msgs: make(chan message), errs: make(chan error, 1), stop: make(chan struct{})}
 	defer close(s.stop)
 	go s.read()
 
 	fail := func(err error) (json.RawMessage, error) {
+		// The deadline watcher kills the server, so a timeout can look like
+		// an exit or a failed write: check the deadline first.
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("%w%s", ErrTimeout, stderr.note())
+		}
 		select {
 		case <-done:
 			if errors.Is(err, ErrExited) || errors.Is(err, io.EOF) {
@@ -240,6 +260,10 @@ func Call(ctx context.Context, opt Options, tool string, args map[string]json.Ra
 	}
 	if err := s.send(map[string]any{"jsonrpc": "2.0", "method": "notifications/initialized"}); err != nil {
 		return fail(err)
+	}
+	if args == nil {
+		// Servers expect an object; nil would be sent as null.
+		args = map[string]json.RawMessage{}
 	}
 	result, err := s.request(ctx, 2, "tools/call", map[string]any{"name": tool, "arguments": args})
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -80,6 +79,16 @@ func TestFakeServer(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}
 	init := read()
+	if mode == "deaf" || mode == "flood" {
+		// Answer initialize, then never read stdin again.
+		write(map[string]any{"jsonrpc": "2.0", "id": init["id"], "result": map[string]any{"protocolVersion": "2025-06-18", "capabilities": map[string]any{}}})
+		if mode == "flood" {
+			for i := 0; ; i++ {
+				write(map[string]any{"jsonrpc": "2.0", "id": i, "method": "roots/list"})
+			}
+		}
+		time.Sleep(time.Minute)
+	}
 	version := `"2025-06-18"`
 	if mode == "oldversion" {
 		version = `"2023-01-01"`
@@ -249,9 +258,6 @@ func TestServerRequests(t *testing.T) {
 
 // Stopping the server also stops what it started.
 func TestStopsChildren(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("no process groups on Windows; documented in docs/server.md")
-	}
 	pidFile := filepath.Join(t.TempDir(), "pid")
 	if got, err := call(t, fake("child", pidFile), nil, 20*time.Second); err != nil || got != "ok" {
 		t.Fatalf("%q %v", got, err)
@@ -267,6 +273,23 @@ func TestStopsChildren(t *testing.T) {
 			t.Fatalf("grandchild %d still running", pid)
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// A server that stops reading can't hold a call past its deadline: not
+// with a large argument blocking the write, not by flooding requests that
+// each need an answer.
+func TestDeadlineWhileWriting(t *testing.T) {
+	big := map[string]json.RawMessage{"content": json.RawMessage(`"` + strings.Repeat("x", 1<<20) + `"`)}
+	for _, mode := range []string{"deaf", "flood"} {
+		start := time.Now()
+		_, err := Call(context.Background(), Options{Command: fake(mode), Timeout: 2 * time.Second}, "write_file", big)
+		if !errors.Is(err, ErrTimeout) {
+			t.Errorf("%s: %v", mode, err)
+		}
+		if d := time.Since(start); d > 6*time.Second {
+			t.Errorf("%s: returned after %v", mode, d)
+		}
 	}
 }
 

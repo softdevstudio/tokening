@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 
 	"github.com/softdevstudio/tokening/internal/connect"
 )
@@ -33,9 +32,9 @@ func connectCommand(args []string, in io.Reader, out, errOut io.Writer) int {
 		fmt.Fprintln(errOut, "tokening connect:", err)
 		return 2
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-	err := connect.Run(ctx, connect.Options{URL: args[0], Grant: os.Getenv(connect.GrantEnv), Log: errOut}, in, out)
+	// Ctrl-C and the client closing stdin both end the relay; SIGINT keeps
+	// its default action.
+	err := connect.Run(context.Background(), connect.Options{URL: args[0], Grant: os.Getenv(connect.GrantEnv), Log: errOut}, in, out)
 	if err != nil {
 		fmt.Fprintln(errOut, "tokening connect:", err)
 		return 2

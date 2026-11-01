@@ -118,13 +118,15 @@ func TestRelayLargeMessage(t *testing.T) {
 }
 
 func TestCheckURLAndGrant(t *testing.T) {
-	for _, bad := range []string{"", "ftp://h/mcp/fs", "http://h/http/fs", "http://h/mcp/", "http://h/mcp/a/b", "http://u:p@h/mcp/fs", "http://h/mcp/fs?grant=x", "http://h/mcp/fs#x"} {
+	for _, bad := range []string{"", "ftp://h/mcp/fs", "http://h/http/fs", "http://h/mcp/", "http://h/mcp/a/b", "http://u:p@h/mcp/fs", "http://h/mcp/fs?grant=x", "http://h/mcp/fs#x", "http://gateway.example.com/mcp/fs", "http://10.0.0.5:8080/mcp/fs"} {
 		if CheckURL(bad) == nil {
 			t.Errorf("accepted %q", bad)
 		}
 	}
-	if err := CheckURL("http://127.0.0.1:8080/mcp/fs"); err != nil {
-		t.Error(err)
+	for _, ok := range []string{"http://127.0.0.1:8080/mcp/fs", "http://localhost:8080/mcp/fs", "http://[::1]:8080/mcp/fs", "https://gateway.example.com/mcp/fs"} {
+		if err := CheckURL(ok); err != nil {
+			t.Errorf("%s: %v", ok, err)
+		}
 	}
 	for _, grant := range []string{"", " ", "tkg x", "tkg\n"} {
 		if Run(context.Background(), Options{URL: "http://127.0.0.1:1/mcp/fs", Grant: grant}, strings.NewReader(""), io.Discard) == nil {

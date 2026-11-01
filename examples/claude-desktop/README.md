@@ -44,3 +44,9 @@ for it. `tokening log` shows every call and every refusal, and
 
 When the grant runs out or expires, issue a new one and change the secret
 in the config.
+
+The policy pins the server's version, so an npm update can't change what
+the gateway runs. The filesystem server only sees the folder it is given.
+Servers with free-form paths or commands can reach whatever the user
+running `tokening serve` can, vault.key included, so give those a separate
+operating system user (see "Stdio servers" in docs/server.md).

@@ -1,0 +1,28 @@
+{
+  "targets": {
+    "notes": {
+      "kind": "mcp_stdio",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem@2.1.0", "/Users/you/notes"],
+      "credential": {"type": "env", "ref": "vault:notes"}
+    }
+  },
+  "templates": {
+    "notes.read-one-file": {
+      "target": "notes",
+      "tool": "read_text_file",
+      "args": {"path": {"bind": "required"}},
+      "max_uses": 20,
+      "max_ttl": "8h"
+    },
+    "notes.write-one-file": {
+      "target": "notes",
+      "tool": "write_file",
+      "args": {
+        "path": {"bind": "required"},
+        "content": {"type": "string", "max_bytes": 65536}
+      },
+      "max_uses": 1,
+      "max_ttl": "15m"
+    }
+  }
+}

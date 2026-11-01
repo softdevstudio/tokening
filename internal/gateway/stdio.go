@@ -4,11 +4,40 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
+	"time"
 
 	"github.com/softdevstudio/tokening/internal/stdio"
 	"github.com/softdevstudio/tokening/internal/store"
 	"github.com/softdevstudio/tokening/internal/version"
 )
+
+// MaxStdioServers bounds how many servers one stdio target runs at once. A
+// grant with many uses can't start more; further calls wait for a free slot
+// and fail after StdioWait, spending their use like any failed forward.
+const MaxStdioServers = 4
+
+// StdioWait is how long a call waits for a free server slot.
+const StdioWait = 30 * time.Second
+
+type stdioSlots struct {
+	mu    sync.Mutex
+	slots map[string]chan struct{}
+}
+
+func (s *stdioSlots) get(target string) chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.slots == nil {
+		s.slots = map[string]chan struct{}{}
+	}
+	c := s.slots[target]
+	if c == nil {
+		c = make(chan struct{}, MaxStdioServers)
+		s.slots[target] = c
+	}
+	return c
+}
 
 // stdioCall runs one authorized tool call against an mcp_stdio target: the
 // server is started for this call only, with the target's env credential and
@@ -35,7 +64,19 @@ func (g *Gateway) stdioCall(ctx context.Context, info store.TargetInfo, name str
 			return nil, 0, err
 		}
 	}
-	result, err := stdio.Call(ctx, stdio.Options{Command: command, Env: env, ClientName: "tokening", ClientVersion: version.Version}, name, args)
+	slot := g.stdio.get(info.ID)
+	wait := time.NewTimer(StdioWait)
+	defer wait.Stop()
+	select {
+	case slot <- struct{}{}:
+		defer func() { <-slot }()
+	case <-wait.C:
+		g.logger.Printf("stdio target %s: %d servers already running; the call waited %v and gave up", info.ID, MaxStdioServers, StdioWait)
+		return nil, 0, errors.New("no free stdio server slot")
+	case <-ctx.Done():
+		return nil, 0, ctx.Err()
+	}
+	result, err := stdio.Call(ctx, stdio.Options{Command: command, Env: env, MaxLine: MaxBodyBytes, ClientName: "tokening", ClientVersion: version.Version}, name, args)
 	if err != nil {
 		// The operator's log gets the cause (and the end of the server's
 		// stderr); the agent only hears that the call failed.

@@ -213,3 +213,11 @@ func TestValidateEnvCredential(t *testing.T) {
 		}
 	}
 }
+
+func TestStdioSlots(t *testing.T) {
+	var s stdioSlots
+	a, b := s.get("fs"), s.get("other")
+	if a != s.get("fs") || a == b || cap(a) != MaxStdioServers {
+		t.Fatal("one pool per target")
+	}
+}

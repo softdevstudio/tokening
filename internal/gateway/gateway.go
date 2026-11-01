@@ -33,6 +33,7 @@ type Gateway struct {
 	client  *http.Client
 	origins map[string]bool
 	logger  *log.Logger
+	stdio   stdioSlots
 }
 
 func New(s *store.Store, v *vault.Vault, options Options) (*Gateway, error) {

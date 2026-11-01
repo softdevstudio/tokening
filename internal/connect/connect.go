@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -53,11 +54,22 @@ func CheckURL(raw string) error {
 	if u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return errors.New("the gateway URL can't carry credentials, a query or a fragment; the grant goes in " + GrantEnv)
 	}
+	if u.Scheme == "http" && !loopback(u.Hostname()) {
+		return errors.New("use https for a gateway on another machine; plain http would send the grant in clear")
+	}
 	target, ok := strings.CutPrefix(u.Path, "/mcp/")
 	if !ok || target == "" || strings.Contains(target, "/") {
 		return errors.New("the gateway URL's path must be /mcp/<target>")
 	}
 	return nil
+}
+
+func loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // Run relays messages from in to the gateway and replies to out until in

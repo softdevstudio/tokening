@@ -58,7 +58,7 @@ Work top to bottom unless a task is blocked. Tick when done and pushed.
 - [x] Demo replay on the home page; footer "A SoftDevStudio.com project"
 - [x] Add Tokening to softdevstudio.com
 
-## v0.2 Phase A: stdio MCP targets (in progress)
+## v0.2 Phase A: stdio MCP targets (shipped as v0.2.0)
 
 Agreed with the owner on 2026-11-01 (item 2 of softdev-plan.md in photozeitgeist/jollyroger.biz, Phase A only; ask before Phase B, the grant request flow and `tokening explain`). Claude is doing this phase.
 
@@ -82,7 +82,9 @@ Steps:
 - [x] independent review (a separate agent, docs/review-v0.2.0.md), fixes
 - [x] release 0.2.0 through the workflow; check assets and run a downloaded binary (release run 41266515160, CI 41266321774; the case study below runs the downloaded Linux binary after checking SHA256SUMS)
 - [x] case study with the released binary in front of the real filesystem MCP server, recorded in test/results/case-studies/stdio (read 189 ms and write 223 ms with server start; refused calls started nothing; flight log intact). Found: npx needs network and proxy variables on every start; docs now say install once or pass proxy variables in the credential
-- [ ] tokening.net post and pages, softdevstudio.com note, softdev-plan.md status
+- [x] tokening.net post and pages, softdevstudio.com note, softdev-plan.md status (2026-11-01)
+
+Phase A done. Phase B (grant request flow with operator approval, `tokening explain`) waits for the owner's go.
 
 ## v0.1.2: flight recorder (shipped)
 

@@ -11,9 +11,9 @@ Where to start a session:
 
 Don't put project rules in this file. If a rule changes, change it in `AGENTS.md` so both assistants see it.
 
-## In progress: v0.2 Phase A, stdio MCP targets
+## v0.2 Phase A, stdio MCP targets: done (v0.2.0)
 
-Agreed with the owner 2026-11-01. Design and steps: the "v0.2 Phase A" section of `TODO.md`. Resume from its first unticked step; pull first.
+Agreed with the owner 2026-11-01, released 2026-11-01 (release run 41266515160). Design, steps and results: the "v0.2 Phase A" section of `TODO.md`; review: `docs/review-v0.2.0.md`; case study: `test/results/case-studies/stdio/`. Cloud sessions can't download Go modules: `internal/stdio` and `internal/connect` are stdlib-only and test locally; the rest type-checks against stub modules kept outside the repo, and its tests run in CI. Next: Phase B (grant request flow, `tokening explain`), only after the owner's go.
 
 ## Flight recorder (v0.1.2): done
 

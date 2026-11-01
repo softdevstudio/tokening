@@ -1,0 +1,22 @@
+# One write, once
+# Recorded by run.py with tokening 0.2.0 and @modelcontextprotocol/server-filesystem@2.1.0 on 2026-11-01
+
+$ tokening grant issue notes.write-one-file --bind 'path="/work/notes/shopping.md"' --uses 1 --ttl 15m ...
+(grant issued)
+
+$ {"jsonrpc": "2.0", "id": 10, "method": "tools/call", "params": {"name": "write_file", "arguments": {"path": "/work/notes/shopping.md", "content": "flour\neggs\n"}}}
+Successfully wrote to /work/notes/shopping.md
+
+$ {"jsonrpc": "2.0", "id": 11, "method": "tools/call", "params": {"name": "write_file", "arguments": {"path": "/work/notes/shopping.md", "content": "overwritten"}}}
+isError: {"allowed":false,"code":"grant_exhausted","reason":"Grant g_99b29eb6c4bf367431c310ee227b15b8 allowed 1 use and has none left.","grant":"g_99b29eb6c4bf367431c310ee227b15b8"}
+
+$ {"jsonrpc": "2.0", "id": 12, "method": "tools/call", "params": {"name": "write_file", "arguments": {"path": "/work/notes/todo.md", "content": "overwritten"}}}
+isError: {"allowed":false,"code":"arg_mismatch","reason":"Argument path does not match the value bound to this grant.","grant":"g_99b29eb6c4bf367431c310ee227b15b8"}
+
+# Server starts: 1.
+
+$ cat notes/shopping.md notes/todo.md
+flour
+eggs
+buy flour
+call the plumber

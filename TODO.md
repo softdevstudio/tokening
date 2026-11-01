@@ -80,8 +80,8 @@ Steps:
 - [x] internal/connect and `tokening connect`; tests
 - [x] Windows CI job; examples/claude-desktop config and policy; README, docs/policy.md, docs/server.md
 - [x] independent review (a separate agent, docs/review-v0.2.0.md), fixes
-- [ ] release 0.2.0 through the workflow; check assets and run a downloaded binary
-- [ ] case study with the released binary in front of the real filesystem MCP server, recorded in test/results/case-studies
+- [x] release 0.2.0 through the workflow; check assets and run a downloaded binary (release run 41266515160, CI 41266321774; the case study below runs the downloaded Linux binary after checking SHA256SUMS)
+- [x] case study with the released binary in front of the real filesystem MCP server, recorded in test/results/case-studies/stdio (read 189 ms and write 223 ms with server start; refused calls started nothing; flight log intact). Found: npx needs network and proxy variables on every start; docs now say install once or pass proxy variables in the credential
 - [ ] tokening.net post and pages, softdevstudio.com note, softdev-plan.md status
 
 ## v0.1.2: flight recorder (shipped)

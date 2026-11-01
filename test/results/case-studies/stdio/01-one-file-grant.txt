@@ -1,0 +1,122 @@
+# Claude Desktop through tokening connect, a grant for one file
+# Recorded by run.py with tokening 0.2.0 and @modelcontextprotocol/server-filesystem@2.1.0 on 2026-11-01
+
+# The policy: an mcp_stdio target that starts the filesystem server on the notes folder,
+# and a template for read_text_file with the path bound at issue time.
+
+$ cat policy.json
+{
+  "targets": {
+    "notes": {
+      "kind": "mcp_stdio",
+      "command": [
+        "sh",
+        "/work/filesystem-server.sh",
+        "/work/notes"
+      ],
+      "credential": {
+        "type": "env",
+        "ref": "vault:notes"
+      }
+    }
+  },
+  "templates": {
+    "notes.read-one-file": {
+      "target": "notes",
+      "tool": "read_text_file",
+      "args": {
+        "path": {
+          "bind": "required"
+        }
+      },
+      "max_uses": 20,
+      "max_ttl": "8h"
+    },
+    "notes.write-one-file": {
+      "target": "notes",
+      "tool": "write_file",
+      "args": {
+        "path": {
+          "bind": "required"
+        },
+        "content": {
+          "type": "string",
+          "max_bytes": 65536
+        }
+      },
+      "max_uses": 1,
+      "max_ttl": "15m"
+    }
+  }
+}
+
+$ tokening grant issue notes.read-one-file --bind 'path="/work/notes/todo.md"' --uses 5 --ttl 1h --to claude-desktop --reason "read my todo list"
+{
+  "grant": {
+    "bound_args": {
+      "path": {
+        "value": "/work/notes/todo.md"
+      }
+    },
+    "bound_query": {},
+    "created_at": "2026-11-01T02:54:56.263Z",
+    "decision_count": 0,
+    "decisions": [],
+    "expires_at": "2026-11-01T03:54:56.263Z",
+    "id": "g_96479bdbf7e1ab17771e36f58d66e3c3",
+    "initial_uses": 5,
+    "issued_by": "owner",
+    "issued_to": "claude-desktop",
+    "reason": "read my todo list",
+    "state": "issued",
+    "target": "notes",
+    "template": "notes.read-one-file",
+    "template_version": 1,
+    "tool": "read_text_file",
+    "uses_left": 5
+  },
+  "secret": "tkg_(shown once, put in TOKENING_GRANT)"
+}
+
+# The client session, as newline-delimited JSON-RPC on the stdin of
+# `tokening connect http://127.0.0.1:18180/mcp/notes` (TOKENING_GRANT set).
+
+$ {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "case-study", "version": "1"}}}
+{"capabilities": {"tools": {}}, "protocolVersion": "2025-06-18", "serverInfo": {"name": "tokening", "version": "0.2.0"}}
+
+$ {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+{"tools": [{"description": "Scoped by the presented Tokening grant. See GET /grant for bindings and limits.", "inputSchema": {"additionalProperties": false, "properties": {"path": {}}, "required": ["path"], "type": "object"}, "name": "read_text_file"}]}
+
+$ {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "read_text_file", "arguments": {"path": "/work/notes/todo.md"}}}
+buy flour
+call the plumber
+
+$ {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "read_text_file", "arguments": {"path": "/work/notes/passwords.md"}}}
+isError: {"allowed":false,"code":"arg_mismatch","reason":"Argument path does not match the value bound to this grant.","grant":"g_96479bdbf7e1ab17771e36f58d66e3c3"}
+
+$ {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "read_text_file", "arguments": {"path": "/work/notes/journal/../passwords.md"}}}
+isError: {"allowed":false,"code":"arg_mismatch","reason":"Argument path does not match the value bound to this grant.","grant":"g_96479bdbf7e1ab17771e36f58d66e3c3"}
+
+$ {"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "read_text_file", "arguments": {"path": "/work/notes/todo.md", "head": 1}}}
+isError: {"allowed":false,"code":"arg_not_allowed","reason":"Grant does not allow argument head. Allowed: path.","grant":"g_96479bdbf7e1ab17771e36f58d66e3c3"}
+
+$ {"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "list_directory", "arguments": {"path": "/work/notes"}}}
+isError: {"allowed":false,"code":"tool_not_allowed","reason":"Grant allows read_text_file; call asked for list_directory.","grant":"g_96479bdbf7e1ab17771e36f58d66e3c3"}
+
+$ {"jsonrpc": "2.0", "id": 8, "method": "tools/call", "params": {"name": "write_file", "arguments": {"path": "/work/notes/todo.md", "content": "nothing to do"}}}
+isError: {"allowed":false,"code":"tool_not_allowed","reason":"Grant allows read_text_file; call asked for write_file.","grant":"g_96479bdbf7e1ab17771e36f58d66e3c3"}
+
+# Server starts during this session: 1 (one per allowed call; refused calls start nothing).
+
+$ cat notes/todo.md notes/passwords.md
+buy flour
+call the plumber
+bank: hunter2
+
+$ tokening grant inspect g_96479bdbf7e1ab17771e36f58d66e3c3
+{
+  "decision_count": 7,
+  "initial_uses": 5,
+  "state": "active",
+  "uses_left": 4
+}

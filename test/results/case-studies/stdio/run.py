@@ -98,29 +98,32 @@ def main():
     (NOTES / "passwords.md").write_text("bank: hunter2\n")
     (NOTES / "journal").mkdir()
     (NOTES / "journal" / "2026-10-31.md").write_text("private\n")
-    # Count every server start, then hand over to the real server.
+    # Install the pinned server once (network needed only here), count every
+    # server start, then hand over to the installed binary. npx would check
+    # the registry on every start, which needs network (and proxy variables
+    # the server doesn't inherit) at call time.
+    subprocess.run(["npm", "install", "--silent", "--prefix", str(WORK / "server"), SERVER_PKG], check=True, capture_output=True, timeout=300)
     wrapper = WORK / "filesystem-server.sh"
-    wrapper.write_text('#!/bin/sh\necho start >> "%s/starts.log"\nexec npx -y %s "$@"\n' % (WORK, SERVER_PKG))
+    wrapper.write_text('#!/bin/sh\necho start >> "%s/starts.log"\nexec "%s/server/node_modules/.bin/mcp-server-filesystem" "$@"\n' % (WORK, WORK))
     wrapper.chmod(0o700)
-    # Warm the npx cache so the first recorded call isn't a download.
-    subprocess.run(["npx", "-y", SERVER_PKG, "--help"], capture_output=True, timeout=300)
 
     policy = json.loads((HERE / "policy.json").read_text())
     policy["targets"]["notes"]["command"] = ["sh", str(wrapper), str(NOTES)]
     (WORK / "policy.json").write_text(json.dumps(policy, indent=2))
     (WORK / "vault.key").write_text(tok(["keygen"]).stdout)
+    os.chmod(WORK / "vault.key", 0o600)
     admin = secrets.token_hex(24)
     env = dict(os.environ, TOKENING_ADMIN_TOKEN=admin, TOKENING_ADMIN_URL=ADMIN, AWS_SECRET_ACCESS_KEY="must-not-reach-the-server")
     server = subprocess.Popen([BIN, "serve", "--policy", "policy.json", "--db", "tokening.db", "--key-file", "vault.key",
                                "--agent", "127.0.0.1:18180", "--admin", "127.0.0.1:18181"],
-                              cwd=WORK, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                              cwd=WORK, env=env, stdout=subprocess.DEVNULL, stderr=open(WORK / "serve.log", "w"))
     summary = {"tokening": tok(["version"]).stdout.strip(), "server": SERVER_PKG, "client": "tokening connect"}
     try:
         for _ in range(100):
             if tok(["template", "list"], env=env, check=False).returncode == 0:
                 break
             if server.poll() is not None:
-                raise RuntimeError(server.stderr.read().decode())
+                raise RuntimeError((WORK / "serve.log").read_text())
             time.sleep(0.1)
 
         t = Transcript("01-one-file-grant.txt", "Claude Desktop through tokening connect, a grant for one file")
@@ -200,11 +203,14 @@ def main():
             t.add("tokening " + " ".join(args), r.stdout + r.stderr, r.returncode)
         t.save()
         summary["flight_verify_exit"] = tok(["flight", "verify", "--db", "tokening.db"], check=False).returncode
+    except Exception:
+        print((WORK / "serve.log").read_text(), file=sys.stderr)
+        raise
     finally:
         server.terminate()
         server.wait(timeout=10)
         shutil.rmtree(WORK, ignore_errors=True)
-    (HERE / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    (HERE / "summary.json").write_text(clean(json.dumps(summary, indent=2, sort_keys=True)) + "\n")
     print(json.dumps(summary, indent=2, sort_keys=True))
 
 

@@ -1,0 +1,46 @@
+# What the operator sees afterwards
+# Recorded by run.py with tokening 0.2.0 and @modelcontextprotocol/server-filesystem@2.1.0 on 2026-11-01
+
+$ tokening log --export | (one line per decision, shortened)
+allowed read_text_file Call fits this grant. One use was consumed before forwarding.
+allowed read_text_file Authorized call completed with upstream HTTP 200. The use remains consumed.
+arg_mismatch read_text_file Argument path does not match the value bound to this grant.
+arg_mismatch read_text_file Argument path does not match the value bound to this grant.
+arg_not_allowed read_text_file Grant does not allow argument head. Allowed: path.
+tool_not_allowed list_directory Grant allows read_text_file; call asked for list_directory.
+tool_not_allowed write_file Grant allows read_text_file; call asked for write_file.
+allowed write_file Call fits this grant. One use was consumed before forwarding.
+allowed write_file Authorized call completed with upstream HTTP 200. The use remains consumed.
+grant_exhausted write_file Grant g_99b29eb6c4bf367431c310ee227b15b8 allowed 1 use and has none left.
+arg_mismatch write_file Argument path does not match the value bound to this grant.
+
+$ tokening flight verify --db tokening.db
+Intact: 22 entries, 1 to 22.
+Head: 22:ae4348162b9c18de917ba5d76bbb70d2ecc41572bf0bdf0d92de0d3b04c3e2c2
+(exit 0)
+
+$ tokening flight replay --db tokening.db --agent claude-desktop
+#1  2026-11-01T02:54:56.263Z  grant     g_96479bdbf7e1ab17771e36f58d66e3c3 issued to claude-desktop by owner: notes.read-one-file on read_text_file, 5 uses, expires 2026-11-01T03:54:56.263Z, bound path, reason "read my todo list"
+#2  2026-11-01T02:54:56.292Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for read_text_file on notes with arguments path (digest aa946cf964e5)
+#3  2026-11-01T02:54:56.292Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 allowed: Call fits this grant. One use was consumed before forwarding. 4 uses left.
+#4  2026-11-01T02:54:56.483Z  result    g_96479bdbf7e1ab17771e36f58d66e3c3 upstream answered HTTP 200 in 189 ms
+#5  2026-11-01T02:54:56.494Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for read_text_file on notes with arguments path (digest 69d1add19190)
+#6  2026-11-01T02:54:56.494Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 refused (arg_mismatch): Argument path does not match the value bound to this grant. 4 uses left.
+#7  2026-11-01T02:54:56.502Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for read_text_file on notes with arguments path (digest 495bcb876871)
+#8  2026-11-01T02:54:56.502Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 refused (arg_mismatch): Argument path does not match the value bound to this grant. 4 uses left.
+#9  2026-11-01T02:54:56.510Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for read_text_file on notes with arguments head, path (digest fd5ef541699f)
+#10  2026-11-01T02:54:56.510Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 refused (arg_not_allowed): Grant does not allow argument head. Allowed: path. 4 uses left.
+#11  2026-11-01T02:54:56.517Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for list_directory on notes with arguments path (digest 94179bcb9b21)
+#12  2026-11-01T02:54:56.517Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 refused (tool_not_allowed): Grant allows read_text_file; call asked for list_directory. 4 uses left.
+#13  2026-11-01T02:54:56.525Z  request   g_96479bdbf7e1ab17771e36f58d66e3c3 claude-desktop asked for write_file on notes with arguments content, path (digest bdb8c34d003a)
+#14  2026-11-01T02:54:56.525Z  decision  g_96479bdbf7e1ab17771e36f58d66e3c3 refused (tool_not_allowed): Grant allows read_text_file; call asked for write_file. 4 uses left.
+#15  2026-11-01T02:54:56.542Z  grant     g_99b29eb6c4bf367431c310ee227b15b8 issued to claude-desktop by owner: notes.write-one-file on write_file, 1 use, expires 2026-11-01T03:09:56.542Z, bound path, reason "start a shopping list"
+#16  2026-11-01T02:54:56.549Z  request   g_99b29eb6c4bf367431c310ee227b15b8 claude-desktop asked for write_file on notes with arguments content, path (digest b409dfd90e02)
+#17  2026-11-01T02:54:56.549Z  decision  g_99b29eb6c4bf367431c310ee227b15b8 allowed: Call fits this grant. One use was consumed before forwarding. 0 uses left.
+#18  2026-11-01T02:54:56.773Z  result    g_99b29eb6c4bf367431c310ee227b15b8 upstream answered HTTP 200 in 223 ms
+#19  2026-11-01T02:54:56.783Z  request   g_99b29eb6c4bf367431c310ee227b15b8 claude-desktop asked for write_file on notes with arguments content, path (digest f1b583b8299d)
+#20  2026-11-01T02:54:56.783Z  decision  g_99b29eb6c4bf367431c310ee227b15b8 refused (grant_exhausted): Grant g_99b29eb6c4bf367431c310ee227b15b8 allowed 1 use and has none left. 0 uses left.
+#21  2026-11-01T02:54:56.790Z  request   g_99b29eb6c4bf367431c310ee227b15b8 claude-desktop asked for write_file on notes with arguments content, path (digest ea7df4c4b859)
+#22  2026-11-01T02:54:56.790Z  decision  g_99b29eb6c4bf367431c310ee227b15b8 refused (arg_mismatch): Argument path does not match the value bound to this grant. 0 uses left.
+Chain intact through entry 22.
+(exit 0)

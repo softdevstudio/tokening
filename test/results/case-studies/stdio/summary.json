@@ -1,0 +1,75 @@
+{
+  "client": "tokening connect",
+  "flight_verify_exit": 0,
+  "read_session": {
+    "results": [
+      {
+        "arguments": null,
+        "reply": "{\"capabilities\": {\"tools\": {}}, \"protocolVersion\": \"2025-06-18\", \"serverInfo\": {\"name\": \"tokening\", \"version\": \"0.2.0\"}}",
+        "request": "initialize"
+      },
+      {
+        "arguments": null,
+        "reply": "{\"tools\": [{\"description\": \"Scoped by the presented Tokening grant. See GET /grant for bindings and limits.\", \"inputSchema\": {\"additionalProperties\": false, \"properties\": {\"path\": {}}, \"required\": [\"path\"], \"type\": \"object\"}, \"name\": \"read_text_file\"}]}",
+        "request": "tools/list"
+      },
+      {
+        "arguments": {
+          "path": "/work/notes/todo.md"
+        },
+        "reply": "buy flour\ncall the plumber\n",
+        "request": "tools/call read_text_file"
+      },
+      {
+        "arguments": {
+          "path": "/work/notes/passwords.md"
+        },
+        "reply": "isError: {\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Argument path does not match the value bound to this grant.\",\"grant\":\"g_96479bdbf7e1ab17771e36f58d66e3c3\"}",
+        "request": "tools/call read_text_file"
+      },
+      {
+        "arguments": {
+          "path": "/work/notes/journal/../passwords.md"
+        },
+        "reply": "isError: {\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Argument path does not match the value bound to this grant.\",\"grant\":\"g_96479bdbf7e1ab17771e36f58d66e3c3\"}",
+        "request": "tools/call read_text_file"
+      },
+      {
+        "arguments": {
+          "head": 1,
+          "path": "/work/notes/todo.md"
+        },
+        "reply": "isError: {\"allowed\":false,\"code\":\"arg_not_allowed\",\"reason\":\"Grant does not allow argument head. Allowed: path.\",\"grant\":\"g_96479bdbf7e1ab17771e36f58d66e3c3\"}",
+        "request": "tools/call read_text_file"
+      },
+      {
+        "arguments": {
+          "path": "/work/notes"
+        },
+        "reply": "isError: {\"allowed\":false,\"code\":\"tool_not_allowed\",\"reason\":\"Grant allows read_text_file; call asked for list_directory.\",\"grant\":\"g_96479bdbf7e1ab17771e36f58d66e3c3\"}",
+        "request": "tools/call list_directory"
+      },
+      {
+        "arguments": {
+          "content": "nothing to do",
+          "path": "/work/notes/todo.md"
+        },
+        "reply": "isError: {\"allowed\":false,\"code\":\"tool_not_allowed\",\"reason\":\"Grant allows read_text_file; call asked for write_file.\",\"grant\":\"g_96479bdbf7e1ab17771e36f58d66e3c3\"}",
+        "request": "tools/call write_file"
+      }
+    ],
+    "server_starts": 1
+  },
+  "server": "@modelcontextprotocol/server-filesystem@2.1.0",
+  "tokening": "tokening 0.2.0",
+  "write_session": {
+    "replies": [
+      "Successfully wrote to /work/notes/shopping.md",
+      "isError: {\"allowed\":false,\"code\":\"grant_exhausted\",\"reason\":\"Grant g_99b29eb6c4bf367431c310ee227b15b8 allowed 1 use and has none left.\",\"grant\":\"g_99b29eb6c4bf367431c310ee227b15b8\"}",
+      "isError: {\"allowed\":false,\"code\":\"arg_mismatch\",\"reason\":\"Argument path does not match the value bound to this grant.\",\"grant\":\"g_99b29eb6c4bf367431c310ee227b15b8\"}"
+    ],
+    "server_starts": 1,
+    "shopping_md": "flour\neggs\n",
+    "todo_md_unchanged": true
+  }
+}

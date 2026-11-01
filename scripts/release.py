@@ -125,9 +125,11 @@ def archive_files(binary):
     for name in ('README.md', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.md', 'CHANGELOG.md'):
         files.append((ROOT / name, name))
     for directory in ('docs', 'examples', 'third_party'):
-        for source in sorted((ROOT / directory).glob('*')):
+        # examples has a folder per client; the others are flat.
+        sources = (ROOT / directory).rglob('*') if directory == 'examples' else (ROOT / directory).glob('*')
+        for source in sorted(sources):
             if source.is_file() and not source.name.startswith('review-'):
-                files.append((source, directory + '/' + source.name))
+                files.append((source, source.relative_to(ROOT).as_posix()))
     files.append((ROOT / 'demo/README.md','demo/README.md'))
     return files
 
@@ -154,6 +156,8 @@ def smoke(binary, log):
     assert command([str(binary), 'version']) == 'tokening ' + version()
     assert 'Tokening' in command([str(binary), 'help'])
     assert 'valid' in command([str(binary), 'check', str(binary.parent / 'examples/wordpress.json')])
+    assert 'valid' in command([str(binary), 'check', str(binary.parent / 'examples/claude-desktop/tokening.json')])
+    assert 'TOKENING_GRANT' in command([str(binary), 'connect', '--help'])
     assert len(base64.b64decode(command([str(binary), 'keygen']), validate=True)) == 32
     with tempfile.TemporaryDirectory(prefix='tokening-smoke-') as directory, log.open('w') as diagnostic:
         state = pathlib.Path(directory)

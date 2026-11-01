@@ -110,7 +110,7 @@ func (g *Gateway) mcp(w http.ResponseWriter, r *http.Request, secret string) {
 			writeError(w, 401, string(matcher.GrantUnknown), "No grant matches this token.")
 			return
 		}
-		if grant.TargetKind != "mcp_http" || grant.Template.Target != target {
+		if (grant.TargetKind != "mcp_http" && grant.TargetKind != "mcp_stdio") || grant.Template.Target != target {
 			writeError(w, 403, "tool_not_allowed", "This grant does not allow this MCP target.")
 			return
 		}
@@ -225,6 +225,9 @@ func validRPCID(raw json.RawMessage) bool {
 
 func (g *Gateway) mcpCall(ctx context.Context, target, name string, args map[string]json.RawMessage) (json.RawMessage, int, error) {
 	info, err := g.store.Target(ctx, target)
+	if err == nil && info.Kind == "mcp_stdio" {
+		return g.stdioCall(ctx, info, name, args)
+	}
 	if err != nil || info.Kind != "mcp_http" {
 		return nil, 0, errors.New("unavailable target")
 	}

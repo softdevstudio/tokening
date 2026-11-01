@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/softdevstudio/tokening/internal/matcher"
+	"github.com/softdevstudio/tokening/internal/stdio"
 	"github.com/softdevstudio/tokening/internal/store"
 )
 
@@ -186,5 +187,9 @@ func copyResponseHeaders(out, in http.Header) {
 
 // ValidateCredential checks the upload format without sending a request.
 func ValidateCredential(kind string, plain []byte) error {
+	if kind == "env" {
+		_, err := stdio.ParseCredential(plain)
+		return err
+	}
 	return inject(&http.Request{Header: make(http.Header)}, kind, plain)
 }
